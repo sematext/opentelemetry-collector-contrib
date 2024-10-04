@@ -21,7 +21,7 @@ type Config struct {
 	App_token configopaque.String `mapstructure:"app_token"`
 
 	// Region specifies the Sematext region the user is operating in
-	// Options: 
+	// Options:
 	// - EU
 	// - US
 	Region string `mapstructure:"region"`
@@ -48,6 +48,6 @@ func (cfg *Config) Validate() error {
 	if cfg.App_token.String() == "" {
 		return fmt.Errorf("app_token is required")
 	}
-	
+
 	return nil
 }

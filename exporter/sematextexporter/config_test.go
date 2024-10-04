@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				Region: "US",
+				Region:          "US",
 				App_token:       "my-token",
 				MetricsSchema:   "otel-v1",
 				PayloadMaxLines: 72,
