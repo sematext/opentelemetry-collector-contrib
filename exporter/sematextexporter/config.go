@@ -20,6 +20,9 @@ type Config struct {
 	// Sensitive data (app_token) should use configopaque.String for security.
 	App_token configopaque.String `mapstructure:"app_token"`
 
+	// Region specifies the Sematext region the user is operating in, helping route requests to the appropriate data center.
+	Region string `mapstructure:"region"`
+
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:
 	// - otel-v1
@@ -36,5 +39,12 @@ func (cfg *Config) Validate() error {
 	if cfg.MetricsSchema != "otel-v1" {
 		return fmt.Errorf("invalid metrics schema: %s", cfg.MetricsSchema)
 	}
+	if cfg.Region != "EU" && cfg.Region != "US" {
+		fmt.Println("Error: Invalid region. Please use either 'EU' or 'US'.")
+	}
+	if cfg.App_token.String() == "" {
+		return fmt.Errorf("app_token is required")
+	}
+	
 	return nil
 }
