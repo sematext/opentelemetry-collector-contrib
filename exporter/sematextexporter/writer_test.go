@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 package sematextexporter
+
 import (
 	"context"
 	"io"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
+
 func Test_sematextHTTPWriterBatch_optimizeTags(t *testing.T) {
 	batch := &sematextHTTPWriterBatch{
 		sematextHTTPWriter: &sematextHTTPWriter{

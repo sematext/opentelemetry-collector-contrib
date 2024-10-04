@@ -5,6 +5,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque" // Added to handle sensitive data
 	"go.opentelemetry.io/collector/config/configretry"
@@ -15,10 +16,10 @@ type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	
+
 	// Sensitive data (app_token) should use configopaque.String for security.
 	App_token configopaque.String `mapstructure:"app_token"`
-	
+
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:
 	// - otel-v1

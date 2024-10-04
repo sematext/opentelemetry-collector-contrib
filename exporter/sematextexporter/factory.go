@@ -10,15 +10,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/influxdata/influxdb-observability/common"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
@@ -39,11 +40,11 @@ func createDefaultConfig() component.Config {
 				"User-Agent": "OpenTelemetry -> Sematext",
 			},
 		},
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		MetricsSchema:    common.MetricsSchemaOtelV1.String(), // Default schema for Sematext
-		PayloadMaxLines:  10_000,    // Max lines per request
-		PayloadMaxBytes:  10_000_000, // Max bytes per request
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+		MetricsSchema:   common.MetricsSchemaOtelV1.String(), // Default schema for Sematext
+		PayloadMaxLines: 10_000,                              // Max lines per request
+		PayloadMaxBytes: 10_000_000,                          // Max bytes per request
 	}
 }
 
@@ -58,7 +59,7 @@ func createMetricsExporter(
 	logger := newZapInfluxLogger(set.Logger)
 
 	// Create a writer for sending metrics to Sematext
-	writer, err := newSematextHTTPWriter(logger,cfg, set.TelemetrySettings)
+	writer, err := newSematextHTTPWriter(logger, cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sematext HTTP writer: %w", err)
 	}

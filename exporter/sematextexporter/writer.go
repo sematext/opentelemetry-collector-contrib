@@ -95,7 +95,6 @@ func composeWriteURL(config *Config) (string, error) {
 	return writeURL.String(), nil
 }
 
-
 // Start implements component.StartFunc
 func (w *sematextHTTPWriter) Start(ctx context.Context, host component.Host) error {
 	httpClient, err := w.httpClientSettings.ToClient(ctx, host, w.telemetrySettings)

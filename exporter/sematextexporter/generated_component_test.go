@@ -19,6 +19,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "sematext", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -41,34 +49,41 @@ func TestComponentLifecycle(t *testing.T) {
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
-	for _, test := range tests {
-		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+
+	for _, tt := range tests {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
-				switch e := c.(type) {
-				case exporter.Logs:
+				switch tt.name {
+				case "logs":
+					e, ok := c.(exporter.Logs)
+					require.True(t, ok)
 					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(context.Background(), logs)
-				case exporter.Metrics:
+				case "metrics":
+					e, ok := c.(exporter.Metrics)
+					require.True(t, ok)
 					metrics := generateLifecycleTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(context.Background(), metrics)
-				case exporter.Traces:
+				case "traces":
+					e, ok := c.(exporter.Traces)
+					require.True(t, ok)
 					traces := generateLifecycleTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
