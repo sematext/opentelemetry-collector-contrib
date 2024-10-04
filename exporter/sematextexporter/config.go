@@ -20,7 +20,10 @@ type Config struct {
 	// Sensitive data (app_token) should use configopaque.String for security.
 	App_token configopaque.String `mapstructure:"app_token"`
 
-	// Region specifies the Sematext region the user is operating in, helping route requests to the appropriate data center.
+	// Region specifies the Sematext region the user is operating in
+	// Options: 
+	// - EU
+	// - US
 	Region string `mapstructure:"region"`
 
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
