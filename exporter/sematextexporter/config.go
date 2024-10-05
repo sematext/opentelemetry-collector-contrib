@@ -5,9 +5,8 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
-
+	"strings"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque" // Added to handle sensitive data
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -17,8 +16,8 @@ type Config struct {
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	// Sensitive data (app_token) should use configopaque.String for security.
-	App_token configopaque.String `mapstructure:"app_token"`
+	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
+	App_token string `mapstructure:"app_token"`
 
 	// Region specifies the Sematext region the user is operating in
 	// Options:
@@ -42,11 +41,11 @@ func (cfg *Config) Validate() error {
 	if cfg.MetricsSchema != "otel-v1" {
 		return fmt.Errorf("invalid metrics schema: %s", cfg.MetricsSchema)
 	}
-	if cfg.Region != "EU" && cfg.Region != "US" {
-		fmt.Println("Error: Invalid region. Please use either 'EU' or 'US'.")
+	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
+		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if cfg.App_token.String() == "" {
-		return fmt.Errorf("app_token is required")
+	if len(cfg.App_token) != 36 {
+		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.App_token)
 	}
 
 	return nil

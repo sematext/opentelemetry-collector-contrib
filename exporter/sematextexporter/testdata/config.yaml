@@ -12,7 +12,7 @@ sematext/override-config:
     max_interval: 3s
     max_elapsed_time: 10s
   region: US  
-  app_token: my-token
+  app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   metrics_schema: otel-v1
   payload_max_lines: 72
   payload_max_bytes: 27
