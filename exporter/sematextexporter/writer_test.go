@@ -1,5 +1,3 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
 package sematextexporter
 
 import (
@@ -11,7 +9,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
@@ -76,32 +73,33 @@ func Test_sematextHTTPWriterBatch_optimizeTags(t *testing.T) {
 		})
 	}
 }
+
 func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 	for _, testCase := range []struct {
 		name            string
 		payloadMaxLines int
 		payloadMaxBytes int
-
 		expectMultipleRequests bool
-	}{{
-		name:            "default",
-		payloadMaxLines: 10_000,
-		payloadMaxBytes: 10_000_000,
-
-		expectMultipleRequests: false,
-	}, {
-		name:            "limit-lines",
-		payloadMaxLines: 1,
-		payloadMaxBytes: 10_000_000,
-
-		expectMultipleRequests: true,
-	}, {
-		name:            "limit-bytes",
-		payloadMaxLines: 10_000,
-		payloadMaxBytes: 1,
-
-		expectMultipleRequests: true,
-	}} {
+	}{
+		{
+			name:            "default",
+			payloadMaxLines: 10_000,
+			payloadMaxBytes: 10_000_000,
+			expectMultipleRequests: false,
+		}, 
+		{
+			name:            "limit-lines",
+			payloadMaxLines: 1,
+			payloadMaxBytes: 10_000_000,
+			expectMultipleRequests: true,
+		}, 
+		{
+			name:            "limit-bytes",
+			payloadMaxLines: 10_000,
+			payloadMaxBytes: 1,
+			expectMultipleRequests: true,
+		},
+	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			var httpRequests []*http.Request
 
@@ -143,6 +141,11 @@ func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 		})
 	}
 }
+
+//This is the test failing:
+// Error:      	Received unexpected error:
+//         	            	Permanent error: line protocol write returned "400 Bad Request" "ERROR: Can't parse line m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000 . Invalid timestamp format (must be 19 digit, nanosecond-precision Unix time), found `1000000002000`.; \n"
+//         	Test:       	Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue
 func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
@@ -162,13 +165,15 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: noopHTTPServer.URL,
 			},
+			App_token: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Region: "US",
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	sematextWriter.httpClient = noopHTTPServer.Client()
-	influxWriterBatch := sematextWriter.NewBatch()
+	sematextWriterBatch := sematextWriter.NewBatch()
 
-	err = influxWriterBatch.EnqueuePoint(
+	err = sematextWriterBatch.EnqueuePoint(
 		context.Background(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
@@ -176,16 +181,38 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		nowTime,
 		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
-	err = influxWriterBatch.WriteBatch(context.Background())
+	err = sematextWriterBatch.WriteBatch(context.Background())
 	require.NoError(t, err)
-
+	//What the metrics line should look like
+	//appStats,token=00000000-1111-2222-3333-444444444444,
+	//os.host=host001,service=registration user.requests.count=10i,user.requests.time=327i 1628605794318000000
 	if assert.NotNil(t, recordedRequest) {
-		assert.Equal(t, "m,k=v f=1i 1000000002000", strings.TrimSpace(string(recordedRequestBody)))
+		assert.Equal(t, "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000", strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
+
+
 func Test_composeWriteURL_doesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		cfg := &Config{}
+		cfg := &Config{
+			Region: "us",
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: "http://localhost:8080",
+			},
+			MetricsSchema: "otel-v1",
+		}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
+
+	assert.NotPanics(t, func() {
+		cfg := &Config{
+			Region: "eu",
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: "http://localhost:8080",
+			},
+			MetricsSchema: "otel-v1",
+		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
 	})

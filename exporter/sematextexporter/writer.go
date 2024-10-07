@@ -10,7 +10,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,7 +21,6 @@ import (
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -34,7 +35,8 @@ type sematextHTTPWriter struct {
 	writeURL           string
 	payloadMaxLines    int
 	payloadMaxBytes    int
-
+	hostname string
+	token string
 	logger common.Logger
 }
 
@@ -43,6 +45,20 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	if err != nil {
 		return nil, err
 	}
+		// Detect the hostname
+		hostname, err := os.Hostname()
+		if err != nil {
+			logger.Debug("could not determine hostname, using 'unknown' as os.host")
+			hostname = "unknown"
+		}
+	
+		if config.PayloadMaxLines < 100 {
+			logger.Debug("PayloadMaxLines below recommended minimum of 100, setting to 100")
+			config.PayloadMaxLines = 100
+		} else if config.PayloadMaxLines > 500 {
+			logger.Debug("PayloadMaxLines above recommended maximum of 500, setting to 500")
+			config.PayloadMaxLines = 500
+		}
 
 	return &sematextHTTPWriter{
 		encoderPool: sync.Pool{
@@ -59,35 +75,26 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 		payloadMaxLines:    config.PayloadMaxLines,
 		payloadMaxBytes:    config.PayloadMaxBytes,
 		logger:             logger,
+		hostname:           hostname,
+		token: config.App_token,
 	}, nil
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
+	var baseURL string
+	if strings.ToLower(config.Region)=="us"{
+		baseURL = "https://spm-receiver.sematext.com/write"
+	}else if strings.ToLower(config.Region) == "eu"{
+		baseURL = "https://spm-receiver.eu.sematext.com/write"
+	}else{
+		return "", fmt.Errorf("invalid region. Please use either 'eu' or 'us'")
+	}
+	writeURL, err := url.Parse(baseURL + "?db=metrics")
 	if err != nil {
 		return "", err
 	}
-	if writeURL.Path == "" || writeURL.Path == "/" {
-		// Assuming a default path for posting metrics
-		writeURL, err = writeURL.Parse("api/v1/metrics")
-		if err != nil {
-			return "", err
-		}
-	}
-
-	// Set any query parameters if needed, depending on the structure of the API
 	queryValues := writeURL.Query()
 	queryValues.Set("precision", "ns")
-
-	// Add App token as authorization in the headers if available
-	if config.App_token != "" {
-		if config.ClientConfig.Headers == nil {
-			config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
-		}
-		config.ClientConfig.Headers["Authorization"] = "Bearer " + config.App_token
-	}
-
-	// Encode any additional query parameters (e.g., metrics schema if needed)
 	queryValues.Set("metrics_schema", config.MetricsSchema)
 
 	writeURL.RawQuery = queryValues.Encode()
@@ -130,6 +137,12 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	if b.encoder == nil {
 		b.encoder = b.encoderPool.Get().(*lineprotocol.Encoder)
 	}
+	// Add token and os.host tags
+	if tags == nil {
+		tags = make(map[string]string)
+	}
+	tags["token"] = b.token   // Add the Sematext token
+	tags["os.host"] = b.hostname // You can make this dynamic to detect the hostname
 
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
