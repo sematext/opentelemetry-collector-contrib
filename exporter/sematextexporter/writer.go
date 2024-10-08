@@ -51,14 +51,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 			logger.Debug("could not determine hostname, using 'unknown' as os.host")
 			hostname = "unknown"
 		}
-	
-		if config.PayloadMaxLines < 100 {
-			logger.Debug("PayloadMaxLines below recommended minimum of 100, setting to 100")
-			config.PayloadMaxLines = 100
-		} else if config.PayloadMaxLines > 500 {
-			logger.Debug("PayloadMaxLines above recommended maximum of 500, setting to 500")
-			config.PayloadMaxLines = 500
-		}
 
 	return &sematextHTTPWriter{
 		encoderPool: sync.Pool{
@@ -94,8 +86,6 @@ func composeWriteURL(config *Config) (string, error) {
 		return "", err
 	}
 	queryValues := writeURL.Query()
-	queryValues.Set("precision", "ns")
-	queryValues.Set("metrics_schema", config.MetricsSchema)
 
 	writeURL.RawQuery = queryValues.Encode()
 
@@ -144,6 +134,7 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	tags["token"] = b.token   // Add the Sematext token
 	tags["os.host"] = b.hostname // You can make this dynamic to detect the hostname
 
+	// Start encoding the measurement
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
@@ -152,6 +143,9 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 		b.encoder.AddField(k, v)
 	}
 	b.encoder.EndLine(ts)
+
+	// Log the encoded data after encoding the point
+	fmt.Printf("Encoded data: %s\n", b.encoder.Bytes())
 
 	if err := b.encoder.Err(); err != nil {
 		b.encoder.Reset()
@@ -174,8 +168,12 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 // WriteBatch sends the internal line protocol buffer to InfluxDB.
 func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if b.encoder == nil {
+		fmt.Println("Encoder is nil")
 		return nil
 	}
+
+	// Log the bytes in the encoder before sending
+	fmt.Printf("Sending encoded data: %s\n", b.encoder.Bytes())
 
 	defer func() {
 		b.encoder.Reset()
@@ -190,17 +188,34 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return consumererror.NewPermanent(err)
 	}
 
+	// Log the request details before sending
+	fmt.Println("Request URL:", req.URL)
+	fmt.Printf("Request Headers: %+v\n", req.Header)
+	fmt.Println("Request Body (before sending):", string(b.encoder.Bytes()))
+
+	// Send the request
 	res, err := b.httpClient.Do(req)
+
+	// Check if the request was successfully sent
 	if err != nil {
+		fmt.Println("Error sending request:", err)
 		return err
 	}
+
+	// Log the status of the response
+	fmt.Println("Response Status:", res.Status)
+
+	// Read and log the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Response Body:", string(body))
+
 	if err = res.Body.Close(); err != nil {
 		return err
 	}
+
 	switch res.StatusCode / 100 {
 	case 2: // Success
 		break
@@ -212,6 +227,7 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 
 	return nil
 }
+
 
 type tag struct {
 	k, v string
