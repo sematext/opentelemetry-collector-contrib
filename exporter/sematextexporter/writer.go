@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"strings"
+	// "strings"
 	"sync"
 	"time"
 
@@ -73,18 +73,19 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	var baseURL string
-	if strings.ToLower(config.Region)=="us"{
-		baseURL = "https://spm-receiver.sematext.com/write"
-	}else if strings.ToLower(config.Region) == "eu"{
-		baseURL = "https://spm-receiver.eu.sematext.com/write"
-	}else{
-		return "", fmt.Errorf("invalid region. Please use either 'eu' or 'us'")
-	}
-	writeURL, err := url.Parse(baseURL + "?db=metrics")
+	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
 	if err != nil {
 		return "", err
 	}
+	if writeURL.Path == "" || writeURL.Path == "/" {
+		// Assuming a default path for posting metrics
+		writeURL, err = writeURL.Parse("write?db=metrics")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// // Set any query parameters if needed, depending on the structure of the API
 	queryValues := writeURL.Query()
 
 	writeURL.RawQuery = queryValues.Encode()
@@ -144,9 +145,6 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	}
 	b.encoder.EndLine(ts)
 
-	// Log the encoded data after encoding the point
-	fmt.Printf("Encoded data: %s\n", b.encoder.Bytes())
-
 	if err := b.encoder.Err(); err != nil {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
@@ -165,7 +163,7 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	return nil
 }
 
-// WriteBatch sends the internal line protocol buffer to InfluxDB.
+// WriteBatch sends the internal line protocol buffer to Sematext.
 func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if b.encoder == nil {
 		fmt.Println("Encoder is nil")
@@ -188,11 +186,6 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	// Log the request details before sending
-	fmt.Println("Request URL:", req.URL)
-	fmt.Printf("Request Headers: %+v\n", req.Header)
-	fmt.Println("Request Body (before sending):", string(b.encoder.Bytes()))
-
 	// Send the request
 	res, err := b.httpClient.Do(req)
 
@@ -202,15 +195,11 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return err
 	}
 
-	// Log the status of the response
-	fmt.Println("Response Status:", res.Status)
-
 	// Read and log the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Response Body:", string(body))
 
 	if err = res.Body.Close(); err != nil {
 		return err

@@ -151,32 +151,25 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 
-	// Log: Test start
-	fmt.Println("Test started: Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue")
-
+	
 	// Set up a mock HTTP server to capture requests
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		// Log: When request is received by server
-		fmt.Println("Received request on the test server")
 
 		if assert.Nil(t, recordedRequest) {
+			var err error
 			recordedRequest = r
-			recordedRequestBody, _ = io.ReadAll(r.Body)
-
-			// Log: Contents of the recorded request body
-			fmt.Printf("Recorded request body: %s\n", string(recordedRequestBody))
+			recordedRequestBody, err = io.ReadAll(r.Body)
+			if err !=nil{
+				fmt.Println(err.Error())
+			}
 		}
 	}))
 	t.Cleanup(noopHTTPServer.Close)
 
-	// Log: Test server setup complete
-	fmt.Println("Test server URL:", noopHTTPServer.URL)
 
 	// Set up the time for the point being enqueued
 	nowTime := time.Unix(1628605794, 318000000)
 
-	// Log: Creating sematext writer
-	fmt.Println("Creating sematext HTTP writer")
 	sematextWriter, err := newSematextHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
@@ -192,14 +185,9 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	// Set the HTTP client to the test server client
 	sematextWriter.httpClient = noopHTTPServer.Client()
 
-	// Log: Sematext writer creation complete
-	fmt.Println("Sematext writer created successfully")
-
 	// Create a new batch to enqueue points
 	sematextWriterBatch := sematextWriter.NewBatch()
 
-	// Log: Enqueueing the point
-	fmt.Println("Enqueuing the point into the batch")
 	err = sematextWriterBatch.EnqueuePoint(
 		context.Background(),
 		"m",
@@ -209,34 +197,17 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		common.InfluxMetricValueTypeUntyped)      // Metric type
 	require.NoError(t, err)
 
-	// Log: Point enqueued successfully
-	fmt.Println("Point enqueued successfully")
 
 	// Force the batch to be written (sent to the server)
 	err = sematextWriterBatch.WriteBatch(context.Background())
 
-	// Log: After write batch
-	fmt.Println("Batch written, checking for request")
-	require.NoError(t, err)
+	require.NoError(t, err)	
 
-	// Log: Print recorded request
-	if recordedRequest != nil {
-		fmt.Println("Recorded Request:", recordedRequest.URL)
-		fmt.Printf("Request Body: %s\n", string(recordedRequestBody))
-	} else {
-		fmt.Println("Recorded request is nil")
-	}
-
-	// Log: Verifying the request body
-	fmt.Println("Verifying the request body")
 	if assert.NotNil(t, recordedRequest) {
-		expected := "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000"
+		expected := "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000"
 		fmt.Printf("Checking request body: expected %s, got %s\n", expected, strings.TrimSpace(string(recordedRequestBody)))
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
-
-	// Log: Test finished
-	fmt.Println("Test finished")
 }
 
 
