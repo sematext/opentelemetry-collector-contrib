@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	// "strings"
+
 	"sync"
 	"time"
 
@@ -35,9 +35,9 @@ type sematextHTTPWriter struct {
 	writeURL           string
 	payloadMaxLines    int
 	payloadMaxBytes    int
-	hostname string
-	token string
-	logger common.Logger
+	hostname           string
+	token              string
+	logger             common.Logger
 }
 
 func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettings component.TelemetrySettings) (*sematextHTTPWriter, error) {
@@ -45,12 +45,12 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	if err != nil {
 		return nil, err
 	}
-		// Detect the hostname
-		hostname, err := os.Hostname()
-		if err != nil {
-			logger.Debug("could not determine hostname, using 'unknown' as os.host")
-			hostname = "unknown"
-		}
+	// Detect the hostname
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Debug("could not determine hostname, using 'unknown' as os.host")
+		hostname = "unknown"
+	}
 
 	return &sematextHTTPWriter{
 		encoderPool: sync.Pool{
@@ -68,7 +68,7 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 		payloadMaxBytes:    config.PayloadMaxBytes,
 		logger:             logger,
 		hostname:           hostname,
-		token: config.App_token,
+		token:              config.App_token,
 	}, nil
 }
 
@@ -132,7 +132,7 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags["token"] = b.token   // Add the Sematext token
+	tags["token"] = b.token      // Add the Sematext token
 	tags["os.host"] = b.hostname // You can make this dynamic to detect the hostname
 
 	// Start encoding the measurement
@@ -216,7 +216,6 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 
 	return nil
 }
-
 
 type tag struct {
 	k, v string

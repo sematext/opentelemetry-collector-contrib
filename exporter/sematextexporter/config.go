@@ -6,6 +6,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"

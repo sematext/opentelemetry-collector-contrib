@@ -2,6 +2,7 @@ package sematextexporter
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +10,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"fmt"
+
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
@@ -77,27 +78,27 @@ func Test_sematextHTTPWriterBatch_optimizeTags(t *testing.T) {
 
 func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 	for _, testCase := range []struct {
-		name            string
-		payloadMaxLines int
-		payloadMaxBytes int
+		name                   string
+		payloadMaxLines        int
+		payloadMaxBytes        int
 		expectMultipleRequests bool
 	}{
 		{
-			name:            "default",
-			payloadMaxLines: 10_000,
-			payloadMaxBytes: 10_000_000,
+			name:                   "default",
+			payloadMaxLines:        10_000,
+			payloadMaxBytes:        10_000_000,
 			expectMultipleRequests: false,
-		}, 
+		},
 		{
-			name:            "limit-lines",
-			payloadMaxLines: 1,
-			payloadMaxBytes: 10_000_000,
+			name:                   "limit-lines",
+			payloadMaxLines:        1,
+			payloadMaxBytes:        10_000_000,
 			expectMultipleRequests: true,
-		}, 
+		},
 		{
-			name:            "limit-bytes",
-			payloadMaxLines: 10_000,
-			payloadMaxBytes: 1,
+			name:                   "limit-bytes",
+			payloadMaxLines:        10_000,
+			payloadMaxBytes:        1,
 			expectMultipleRequests: true,
 		},
 	} {
@@ -143,15 +144,15 @@ func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 	}
 }
 
-//This is the test failing:
+// This is the test failing:
 // Error:      	Received unexpected error:
-//         	            	Permanent error: line protocol write returned "400 Bad Request" "ERROR: Can't parse line m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000 . Invalid timestamp format (must be 19 digit, nanosecond-precision Unix time), found `1000000002000`.; \n"
-//         	Test:       	Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue
+//
+//	            	Permanent error: line protocol write returned "400 Bad Request" "ERROR: Can't parse line m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000 . Invalid timestamp format (must be 19 digit, nanosecond-precision Unix time), found `1000000002000`.; \n"
+//	Test:       	Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue
 func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 
-	
 	// Set up a mock HTTP server to capture requests
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 
@@ -159,13 +160,12 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 			var err error
 			recordedRequest = r
 			recordedRequestBody, err = io.ReadAll(r.Body)
-			if err !=nil{
+			if err != nil {
 				fmt.Println(err.Error())
 			}
 		}
 	}))
 	t.Cleanup(noopHTTPServer.Close)
-
 
 	// Set up the time for the point being enqueued
 	nowTime := time.Unix(1628605794, 318000000)
@@ -197,11 +197,10 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		common.InfluxMetricValueTypeUntyped)      // Metric type
 	require.NoError(t, err)
 
-
 	// Force the batch to be written (sent to the server)
 	err = sematextWriterBatch.WriteBatch(context.Background())
 
-	require.NoError(t, err)	
+	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {
 		expected := "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000"
@@ -209,7 +208,6 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
-
 
 func Test_composeWriteURL_doesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
