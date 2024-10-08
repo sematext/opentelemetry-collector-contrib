@@ -204,7 +204,6 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 
 	if assert.NotNil(t, recordedRequest) {
 		expected := "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000"
-		fmt.Printf("Checking request body: expected %s, got %s\n", expected, strings.TrimSpace(string(recordedRequestBody)))
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
