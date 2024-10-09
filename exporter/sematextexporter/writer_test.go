@@ -144,16 +144,9 @@ func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 	}
 }
 
-// This is the test failing:
-// Error:      	Received unexpected error:
-//
-//	            	Permanent error: line protocol write returned "400 Bad Request" "ERROR: Can't parse line m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1000000002000 . Invalid timestamp format (must be 19 digit, nanosecond-precision Unix time), found `1000000002000`.; \n"
-//	Test:       	Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue
 func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
-
-	// Set up a mock HTTP server to capture requests
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 
 		if assert.Nil(t, recordedRequest) {
@@ -166,8 +159,6 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		}
 	}))
 	t.Cleanup(noopHTTPServer.Close)
-
-	// Set up the time for the point being enqueued
 	nowTime := time.Unix(1628605794, 318000000)
 
 	sematextWriter, err := newSematextHTTPWriter(
@@ -181,23 +172,18 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
-
-	// Set the HTTP client to the test server client
 	sematextWriter.httpClient = noopHTTPServer.Client()
-
-	// Create a new batch to enqueue points
 	sematextWriterBatch := sematextWriter.NewBatch()
 
 	err = sematextWriterBatch.EnqueuePoint(
 		context.Background(),
 		"m",
-		map[string]string{"k": "v", "empty": ""}, // Tags
-		map[string]any{"f": int64(1)},            // Fields
-		nowTime,                                  // Timestamp
-		common.InfluxMetricValueTypeUntyped)      // Metric type
+		map[string]string{"k": "v", "empty": ""},
+		map[string]any{"f": int64(1)},        
+		nowTime,                               
+		common.InfluxMetricValueTypeUntyped) 
 	require.NoError(t, err)
 
-	// Force the batch to be written (sent to the server)
 	err = sematextWriterBatch.WriteBatch(context.Background())
 
 	require.NoError(t, err)

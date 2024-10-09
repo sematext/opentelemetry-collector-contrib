@@ -84,8 +84,6 @@ func composeWriteURL(config *Config) (string, error) {
 			return "", err
 		}
 	}
-
-	// // Set any query parameters if needed, depending on the structure of the API
 	queryValues := writeURL.Query()
 
 	writeURL.RawQuery = queryValues.Encode()
@@ -132,10 +130,9 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags["token"] = b.token      // Add the Sematext token
-	tags["os.host"] = b.hostname // You can make this dynamic to detect the hostname
+	tags["token"] = b.token
+	tags["os.host"] = b.hostname
 
-	// Start encoding the measurement
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
@@ -170,9 +167,6 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return nil
 	}
 
-	// Log the bytes in the encoder before sending
-	fmt.Printf("Sending encoded data: %s\n", b.encoder.Bytes())
-
 	defer func() {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
@@ -206,11 +200,11 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	}
 
 	switch res.StatusCode / 100 {
-	case 2: // Success
+	case 2:
 		break
-	case 5: // Retryable error
+	case 5:
 		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-	default: // Terminal error
+	default:
 		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 	}
 
