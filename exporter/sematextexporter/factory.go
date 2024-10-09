@@ -58,7 +58,7 @@ func createMetricsExporter(
 	cfg := config.(*Config)
 
 	// Initialize the logger for Sematext
-	logger := newZapInfluxLogger(set.Logger)
+	logger := newZapSematextLogger(set.Logger)
 
 	// Create a writer for sending metrics to Sematext
 	writer, err := newSematextHTTPWriter(logger, cfg, set.TelemetrySettings)

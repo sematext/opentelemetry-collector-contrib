@@ -12,7 +12,7 @@ type zapInfluxLogger struct {
 	*zap.SugaredLogger
 }
 
-func newZapInfluxLogger(logger *zap.Logger) common.Logger {
+func newZapSematextLogger(logger *zap.Logger) common.Logger {
 	return &common.ErrorLogger{
 		Logger: &zapInfluxLogger{
 			logger.Sugar(),
