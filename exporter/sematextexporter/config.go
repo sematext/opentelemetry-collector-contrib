@@ -18,7 +18,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
-	App_token string `mapstructure:"app_token"`
+	AppToken string `mapstructure:"app_token"`
 
 	// Region specifies the Sematext region the user is operating in
 	// Options:
@@ -45,8 +45,8 @@ func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if len(cfg.App_token) != 36 {
-		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.App_token)
+	if len(cfg.AppToken) != 36 {
+		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.AppToken)
 	}
 
 	return nil

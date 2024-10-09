@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				Region:          "US",
-				App_token:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				MetricsSchema:   "otel-v1",
 				PayloadMaxLines: 72,
 				PayloadMaxBytes: 27,

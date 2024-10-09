@@ -176,7 +176,7 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: noopHTTPServer.URL,
 			},
-			App_token: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Region:    "US",
 		},
 		componenttest.NewNopTelemetrySettings())
