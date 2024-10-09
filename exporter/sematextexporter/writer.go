@@ -45,7 +45,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	if err != nil {
 		return nil, err
 	}
-	// Detect the hostname
 	hostname, err := os.Hostname()
 	if err != nil {
 		logger.Debug("could not determine hostname, using 'unknown' as os.host")
@@ -78,7 +77,6 @@ func composeWriteURL(config *Config) (string, error) {
 		return "", err
 	}
 	if writeURL.Path == "" || writeURL.Path == "/" {
-		// Assuming a default path for posting metrics
 		writeURL, err = writeURL.Parse("write?db=metrics")
 		if err != nil {
 			return "", err
@@ -179,17 +177,11 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-
-	// Send the request
 	res, err := b.httpClient.Do(req)
-
-	// Check if the request was successfully sent
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return err
 	}
-
-	// Read and log the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err

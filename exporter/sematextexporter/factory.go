@@ -42,11 +42,11 @@ func createDefaultConfig() component.Config {
 		},
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		MetricsSchema:   common.MetricsSchemaOtelV1.String(), // Default schema for Sematext
+		MetricsSchema:   common.MetricsSchemaOtelV1.String(),
 		AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		Region:          "EU",
-		PayloadMaxLines: 10_000,     // Max lines per request
-		PayloadMaxBytes: 10_000_000, // Max bytes per request
+		PayloadMaxLines: 10_000,
+		PayloadMaxBytes: 10_000_000,
 	}
 }
 

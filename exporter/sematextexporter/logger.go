@@ -8,18 +8,18 @@ import (
 	"go.uber.org/zap"
 )
 
-type zapInfluxLogger struct {
+type zapSematextLogger struct {
 	*zap.SugaredLogger
 }
 
 func newZapSematextLogger(logger *zap.Logger) common.Logger {
 	return &common.ErrorLogger{
-		Logger: &zapInfluxLogger{
+		Logger: &zapSematextLogger{
 			logger.Sugar(),
 		},
 	}
 }
 
-func (l zapInfluxLogger) Debug(msg string, kv ...any) {
+func (l zapSematextLogger) Debug(msg string, kv ...any) {
 	l.SugaredLogger.Debugw(msg, kv...)
 }
