@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func Test_sematextHTTPWriterBatch_optimizeTags(t *testing.T) {
+func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 	batch := &sematextHTTPWriterBatch{
 		sematextHTTPWriter: &sematextHTTPWriter{
 			logger: common.NoopLogger{},
@@ -76,7 +76,7 @@ func Test_sematextHTTPWriterBatch_optimizeTags(t *testing.T) {
 	}
 }
 
-func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
+func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
 	for _, testCase := range []struct {
 		name                   string
 		payloadMaxLines        int
@@ -144,7 +144,7 @@ func Test_sematextHTTPWriterBatch_maxPayload(t *testing.T) {
 	}
 }
 
-func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
+func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
@@ -194,7 +194,7 @@ func Test_sematextHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	}
 }
 
-func Test_composeWriteURL_doesNotPanic(t *testing.T) {
+func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		cfg := &Config{
 			Region: "us",
