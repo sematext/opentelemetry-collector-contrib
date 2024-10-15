@@ -191,10 +191,10 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return err
 	}
 
-	switch res.StatusCode / 100 {
-	case 2:
+	switch res.StatusCode {
+	case 200:
 		break
-	case 5:
+	case 500:
 		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 	default:
 		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
