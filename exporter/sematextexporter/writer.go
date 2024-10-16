@@ -47,8 +47,8 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	}
 	hostname, err := os.Hostname()
 	if err != nil {
-		logger.Debug("could not determine hostname, using 'unknown' as os.host")
-		hostname = "unknown"
+		return nil, fmt.Errorf("could not detect hostname: %w", err)
+
 	}
 
 	return &sematextHTTPWriter{
