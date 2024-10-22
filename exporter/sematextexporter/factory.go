@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		},
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		MetricsSchema:   common.MetricsSchemaOtelV1.String(),
+		MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 		AppToken:       appToken,
 		Region:          "EU",
 		PayloadMaxLines: 10_000,

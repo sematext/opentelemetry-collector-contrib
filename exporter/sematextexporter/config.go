@@ -28,7 +28,7 @@ type Config struct {
 
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:
-	// - otel-v1
+	// - telegraf-prometheus-v2
 	MetricsSchema string `mapstructure:"metrics_schema"`
 
 	// PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
@@ -39,7 +39,7 @@ type Config struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if cfg.MetricsSchema != "otel-v1" {
+	if cfg.MetricsSchema != "telegraf-prometheus-v2" {
 		return fmt.Errorf("invalid metrics schema: %s", cfg.MetricsSchema)
 	}
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
