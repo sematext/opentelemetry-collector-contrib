@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Region:          "US",
 				AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-				MetricsSchema:   "otel-v1",
+				MetricsSchema:   "telegraf-prometheus-v2",
 				PayloadMaxLines: 72,
 				PayloadMaxBytes: 27,
 			},
