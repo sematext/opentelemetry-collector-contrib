@@ -189,7 +189,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {
-		expected := "m,k=v,os.host=ADMINs-MacBook-Pro.local,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000"
+		expected := "m,k=v,os.host=Mac,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000"
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
