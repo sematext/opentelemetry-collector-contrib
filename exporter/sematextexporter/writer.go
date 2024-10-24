@@ -209,6 +209,23 @@ type tag struct {
 
 // optimizeTags sorts tags by key and removes tags with empty keys or values
 func (b *sematextHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
+	// Ensure token and os.host tags are always present
+	m["token"] = b.token
+	m["os.host"] = b.hostname
+
+	// Limit to 18 other tags, excluding token and os.host
+	if len(m) > 20 {
+		count := 0
+		for k := range m {
+			if k != "token" && k != "os.host" {
+				count++
+				if count > 18 {
+					delete(m, k)
+				}
+			}
+		}
+	}
+
 	tags := make([]tag, 0, len(m))
 	for k, v := range m {
 		switch {
@@ -220,9 +237,11 @@ func (b *sematextHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 			tags = append(tags, tag{k, v})
 		}
 	}
+
 	sort.Slice(tags, func(i, j int) bool {
 		return tags[i].k < tags[j].k
 	})
+
 	return tags
 }
 
