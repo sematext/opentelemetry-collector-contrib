@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "spm-receiver.sematext.com",
+					Endpoint: "https://spm-receiver.sematext.com",
 					Timeout:  500 * time.Millisecond,
 					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},

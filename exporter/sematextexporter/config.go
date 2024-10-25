@@ -42,11 +42,17 @@ func (cfg *Config) Validate() error {
 	if cfg.MetricsSchema != "telegraf-prometheus-v2" {
 		return fmt.Errorf("invalid metrics schema: %s", cfg.MetricsSchema)
 	}
-	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
+	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" && strings.ToLower(cfg.Region) != "custom"{
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
 	if len(cfg.AppToken) != 36 {
 		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.AppToken)
+	}
+	if strings.ToLower(cfg.Region) == "eu" {
+		cfg.Endpoint ="https://spm-receiver.eu.sematext.com"
+	}
+	if strings.ToLower(cfg.Region) == "us"{
+		cfg.Endpoint ="https://spm-receiver.sematext.com"
 	}
 
 	return nil

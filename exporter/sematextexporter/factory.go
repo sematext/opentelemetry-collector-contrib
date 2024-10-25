@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 		AppToken:       appToken,
-		Region:          "EU",
+		Region:          "custom",
 		PayloadMaxLines: 10_000,
 		PayloadMaxBytes: 10_000_000,
 	}

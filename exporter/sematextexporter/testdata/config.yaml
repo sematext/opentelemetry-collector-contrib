@@ -1,6 +1,5 @@
 sematext/default-config:
 sematext/override-config:
-  endpoint: spm-receiver.sematext.com
   timeout: 500ms
   sending_queue:
     enabled: true
