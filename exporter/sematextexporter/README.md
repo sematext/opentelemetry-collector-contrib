@@ -16,8 +16,8 @@ The following configuration options are supported:
 * `Region`  Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`
-* `payload_max_lines` (default = 10_000) Maximum number of lines allowed per HTTP POST request
-* `payload_max_bytes` (default = 10_000_000) Maximum number of bytes allowed per HTTP POST request
+* `payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
+* `payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
 * `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
 * `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
     * `enabled` (default = true)
