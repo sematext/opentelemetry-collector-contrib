@@ -12,15 +12,13 @@ The following configuration options are supported:
     - US: `spm-receiver.sematext.com`
     - EU: `spm-receiver.eu.sematext.com`
 * `timeout` (default = 5s) Timeout for requests
-* `AppToken` App token is the token of Sematext Monitoring App to which you want to send the metrics.
+* `AppToken` App token specifies the token of Sematext Monitoring App to which the user wants to send metrics to.
 * `Region`  Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`
 * `payload_max_lines` (default = 10_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 10_000_000) Maximum number of bytes allowed per HTTP POST request
-* `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write; must be one of:
-    * `otel-v1`
-    * `telegraf-prometheus-v2`
+* `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
 * `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
     * `enabled` (default = true)
     * `num_consumers` (default = 10) The number of consumers from the queue
