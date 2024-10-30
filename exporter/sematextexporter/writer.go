@@ -60,7 +60,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 				return e
 			},
 		},
-		httpClientSettings: config.ClientConfig,
 		telemetrySettings:  telemetrySettings,
 		writeURL:           writeURL,
 		payloadMaxLines:    config.PayloadMaxLines,
@@ -72,7 +71,7 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
+	writeURL, err := url.Parse(config.MetricsEndpoint)
 	if err != nil {
 		return "", err
 	}

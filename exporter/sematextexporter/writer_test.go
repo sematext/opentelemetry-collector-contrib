@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
@@ -164,9 +163,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	sematextWriter, err := newSematextHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: noopHTTPServer.URL,
-			},
+			MetricsEndpoint:noopHTTPServer.URL,
 			AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Region:    "US",
 		},
@@ -198,10 +195,8 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		cfg := &Config{
 			Region: "us",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: "http://localhost:8080",
-			},
-			MetricsSchema: "otel-v1",
+			MetricsEndpoint: "http://localhost:8080" ,
+			MetricsSchema: "telegraf-prometheus-v2",
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
@@ -210,10 +205,9 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		cfg := &Config{
 			Region: "eu",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: "http://localhost:8080",
-			},
-			MetricsSchema: "otel-v1",
+			MetricsEndpoint: "http://localhost:8080",
+
+			MetricsSchema: "telegraf-prometheus-v2",
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)

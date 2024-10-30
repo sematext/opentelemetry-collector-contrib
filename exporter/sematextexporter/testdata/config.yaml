@@ -1,6 +1,5 @@
 sematext/default-config:
 sematext/override-config:
-  timeout: 500ms
   sending_queue:
     enabled: true
     num_consumers: 3

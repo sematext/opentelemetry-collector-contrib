@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -38,11 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://spm-receiver.sematext.com",
-					Timeout:  500 * time.Millisecond,
-					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
-				},
+				MetricsEndpoint: "https://spm-receiver.sematext.com",
 				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 3,

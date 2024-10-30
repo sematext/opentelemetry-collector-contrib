@@ -6,14 +6,12 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
-
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`
+	MetricsEndpoint string `mapstructure:"metrics_endpoint"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -49,10 +47,10 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.AppToken)
 	}
 	if strings.ToLower(cfg.Region) == "eu" {
-		cfg.Endpoint ="https://spm-receiver.eu.sematext.com"
+		cfg.MetricsEndpoint ="https://spm-receiver.eu.sematext.com"
 	}
 	if strings.ToLower(cfg.Region) == "us"{
-		cfg.Endpoint ="https://spm-receiver.sematext.com"
+		cfg.MetricsEndpoint ="https://spm-receiver.sematext.com"
 	}
 
 	return nil
