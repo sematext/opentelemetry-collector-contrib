@@ -26,10 +26,11 @@ type Config struct {
 type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
 	AppToken         string                     `mapstructure:"app_token"`
-	// MetricsSchema indicates the metrics schema to emit to line protocol.
-	// Default: telegraf-prometheus-v2
+// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
 	MetricsEndpoint  string                     `mapstructure:"metrics_endpoint"`
 	QueueSettings    exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	// MetricsSchema indicates the metrics schema to emit to line protocol.
+	// Default: telegraf-prometheus-v2
 	MetricsSchema    string                     `mapstructure:"metrics_schema"`
 	// PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
 	PayloadMaxLines  int                        `mapstructure:"payload_max_lines"`
