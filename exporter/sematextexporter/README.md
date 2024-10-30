@@ -7,15 +7,11 @@ This exporter supports sending metrics to [Sematext Cloud](https://sematext.com/
 ## Configuration
 
 The following configuration options are supported:
-
-* `endpoint` (required) HTTP/S destination for metric receivers. It is dependent on the region:
-    - US: `spm-receiver.sematext.com`
-    - EU: `spm-receiver.eu.sematext.com`
 * `timeout` (default = 5s) Timeout for requests
-* `AppToken` App token specifies the token of Sematext Monitoring App to which the user wants to send metrics to.
 * `Region`  Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`
+* `AppToken` App token specifies the token of Sematext Monitoring App to which the user wants to send data to.
 * `payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
 * `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
@@ -33,20 +29,19 @@ The full list of settings exposed for this exporter are documented in [config.go
 
 Example:
 ```yaml
-  endpoint: spm-receiver.sematext.com
-  timeout: 500ms
+timeout: 500ms
+region: US  
+retry_on_failure:
+  enabled: true
+  initial_interval: 1s
+  max_interval: 3s
+  max_elapsed_time: 10s
+metrics:
+  app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   sending_queue:
     enabled: true
     num_consumers: 3
     queue_size: 10
-  retry_on_failure:
-    enabled: true
-    initial_interval: 1s
-    max_interval: 3s
-    max_elapsed_time: 10s
-  region: US  
-  app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  metrics_schema: telegraf-prometheus-v2
   payload_max_lines: 100
   payload_max_bytes: 1000
 ```
