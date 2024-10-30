@@ -8,9 +8,12 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -31,13 +34,21 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig: confighttp.ClientConfig{
+			Timeout: 5 * time.Second,
+			Headers: map[string]configopaque.String{
+				"User-Agent": "OpenTelemetry -> Sematext",
+			},
+		},
+		MetricsConfig: MetricsConfig{
+			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
+			AppToken:       appToken,
+			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+			PayloadMaxLines: 10_000,
+			PayloadMaxBytes: 10_000_000,
+		},	
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-		AppToken:       appToken,
 		Region:          "custom",
-		PayloadMaxLines: 10_000,
-		PayloadMaxBytes: 10_000_000,
 	}
 }
 

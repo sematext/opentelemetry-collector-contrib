@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,12 +38,23 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
-				MetricsEndpoint: "https://spm-receiver.sematext.com",
-				QueueSettings: exporterhelper.QueueConfig{
-					Enabled:      true,
-					NumConsumers: 3,
-					QueueSize:    10,
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:  500 * time.Millisecond,
+					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
+				MetricsConfig: MetricsConfig{
+					MetricsEndpoint: "https://spm-receiver.sematext.com",
+					QueueSettings: exporterhelper.QueueConfig{
+						Enabled:      true,
+						NumConsumers: 3,
+						QueueSize:    10,
+					},
+					AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					MetricsSchema:   "telegraf-prometheus-v2",
+					PayloadMaxLines: 72,
+					PayloadMaxBytes: 27,
+				},
+			
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     1 * time.Second,
@@ -51,10 +64,6 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				Region:          "US",
-				AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-				MetricsSchema:   "telegraf-prometheus-v2",
-				PayloadMaxLines: 72,
-				PayloadMaxBytes: 27,
 			},
 		},
 	}

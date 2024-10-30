@@ -163,8 +163,10 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	sematextWriter, err := newSematextHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			MetricsEndpoint:noopHTTPServer.URL,
-			AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			MetricsConfig: MetricsConfig{
+				MetricsEndpoint:noopHTTPServer.URL ,
+				AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			},
 			Region:    "US",
 		},
 		componenttest.NewNopTelemetrySettings())
@@ -195,8 +197,10 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		cfg := &Config{
 			Region: "us",
-			MetricsEndpoint: "http://localhost:8080" ,
-			MetricsSchema: "telegraf-prometheus-v2",
+			MetricsConfig: MetricsConfig{
+				MetricsEndpoint: "http://localhost:8080",
+				MetricsSchema: "telegraf-prometheus-v2",
+			},
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
@@ -205,9 +209,11 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		cfg := &Config{
 			Region: "eu",
-			MetricsEndpoint: "http://localhost:8080",
+			MetricsConfig: MetricsConfig{
+				MetricsEndpoint: "http://localhost:8080",
+				MetricsSchema: "telegraf-prometheus-v2",
+			},
 
-			MetricsSchema: "telegraf-prometheus-v2",
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)

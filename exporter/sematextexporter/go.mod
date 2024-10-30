@@ -5,6 +5,7 @@ go 1.23.1
 require (
 	github.com/influxdata/influxdb-observability/common v0.5.8
 	go.opentelemetry.io/collector/config/confighttp v0.110.0
+	go.opentelemetry.io/collector/config/configopaque v1.16.0
 	go.opentelemetry.io/collector/config/configretry v1.16.0
 	go.opentelemetry.io/collector/exporter v0.110.0
 	go.uber.org/goleak v1.3.0
@@ -18,7 +19,6 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.16.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.110.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.110.0 // indirect

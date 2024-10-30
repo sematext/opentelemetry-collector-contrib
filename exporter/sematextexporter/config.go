@@ -6,40 +6,39 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
+
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type Config struct {
-	MetricsEndpoint string `mapstructure:"metrics_endpoint"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-
-	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
-	AppToken string `mapstructure:"app_token"`
-
 	// Region specifies the Sematext region the user is operating in
 	// Options:
 	// - EU
 	// - US
 	Region string `mapstructure:"region"`
+	MetricsConfig `mapstructure:"metrics"`
+}
 
+type MetricsConfig struct {
+	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
+	AppToken         string                     `mapstructure:"app_token"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
-	// Options:
-	// - telegraf-prometheus-v2
-	MetricsSchema string `mapstructure:"metrics_schema"`
-
+	// Default: telegraf-prometheus-v2
+	MetricsEndpoint  string                     `mapstructure:"metrics_endpoint"`
+	QueueSettings    exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	MetricsSchema    string                     `mapstructure:"metrics_schema"`
 	// PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
-	PayloadMaxLines int `mapstructure:"payload_max_lines"`
+	PayloadMaxLines  int                        `mapstructure:"payload_max_lines"`
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
-	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
+	PayloadMaxBytes  int                        `mapstructure:"payload_max_bytes"`
 }
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if cfg.MetricsSchema != "telegraf-prometheus-v2" {
-		return fmt.Errorf("invalid metrics schema: %s", cfg.MetricsSchema)
-	}
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" && strings.ToLower(cfg.Region) != "custom"{
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
