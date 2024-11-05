@@ -26,7 +26,7 @@ type Config struct {
 type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
 	AppToken         string                     `mapstructure:"app_token"`
-// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
+	// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
 	MetricsEndpoint  string                     `mapstructure:"metrics_endpoint"`
 	QueueSettings    exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
