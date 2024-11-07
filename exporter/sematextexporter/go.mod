@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
 
-go 1.23.1
+go 1.22.0
 
 require (
 	github.com/influxdata/influxdb-observability/common v0.5.8
