@@ -21,6 +21,7 @@ type Config struct {
 	// - US
 	Region string `mapstructure:"region"`
 	MetricsConfig `mapstructure:"metrics"`
+	LogsConfig `mapstructure:"logs"`
 }
 
 type MetricsConfig struct {
@@ -37,21 +38,30 @@ type MetricsConfig struct {
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
 	PayloadMaxBytes  int                        `mapstructure:"payload_max_bytes"`
 }
-
+type LogsConfig struct {
+	AppToken string `mapstructure:"app_token"`
+	LogsEndpoint string  `mapstructure:"logs_endpoint"`
+}
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" && strings.ToLower(cfg.Region) != "custom"{
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if len(cfg.AppToken) != 36 {
-		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.AppToken)
+	if len(cfg.MetricsConfig.AppToken) != 36{
+		return fmt.Errorf("invalid metrics app_token: %s. app_token should be 36 characters", cfg.MetricsConfig.AppToken)
+	}
+	if len(cfg.LogsConfig.AppToken) != 36{
+		return fmt.Errorf("invalid logs app_token: %s. app_token should be 36 characters", cfg.LogsConfig.AppToken)
 	}
 	if strings.ToLower(cfg.Region) == "eu" {
 		cfg.MetricsEndpoint ="https://spm-receiver.eu.sematext.com"
+		cfg.LogsEndpoint ="logsene-receiver.eu.sematext.com"
 	}
 	if strings.ToLower(cfg.Region) == "us"{
 		cfg.MetricsEndpoint ="https://spm-receiver.sematext.com"
+		cfg.LogsEndpoint = "logsene-receiver.sematext.com"
 	}
+
 
 	return nil
 }
