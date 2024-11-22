@@ -44,7 +44,6 @@ type LogsConfig struct {
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
 	LogsMapping LogMapping `mapstructure:"logs_mapping"`
 	LogsFlushSettings FlushSettings `mapstructure:"logs_flush_settings"`
-	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 	// TelemetrySettings contains settings useful for testing/debugging purposes
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
@@ -78,12 +77,6 @@ type TelemetrySettings struct {
 	LogRequestBody  bool `mapstructure:"log_request_body"`
 	LogResponseBody bool `mapstructure:"log_response_body"`
 }
-
-type LogstashFormatSettings struct {
-	Enabled         bool   `mapstructure:"enabled"`
-	PrefixSeparator string `mapstructure:"prefix_separator"`
-	DateFormat      string `mapstructure:"date_format"`
-}
 // FlushSettings defines settings for configuring the write buffer flushing
 // policy in the Elasticsearch exporter. The exporter sends a bulk request with
 // all events already serialized into the send-buffer.
@@ -95,11 +88,9 @@ type FlushSettings struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 type LogMapping struct {
-	//Will refine this comment later but from the research i did there are 4 different modes used in Elastisearch Exporter
-	// I believe we need MappingECS but for now i will just leave all the options
     Mode string `mapstructure:"mode"`
 }
-
+//This mapping is going to be None, will remove it if after building the exporter we realize we do not need it
 type MappingMode int
 const (
 	MappingNone MappingMode = iota
