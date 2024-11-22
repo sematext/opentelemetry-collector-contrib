@@ -16,8 +16,6 @@ sematext/override-config:
     payload_max_lines: 72
     payload_max_bytes: 27
   logs:
-    tls:
-    insecure: false
     app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     flush:
       bytes: 10485760
