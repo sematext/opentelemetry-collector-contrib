@@ -86,7 +86,7 @@ func createMetricsExporter(
 		set,
 		cfg,
 		exp.WriteMetrics,
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(cfg.MetricsConfig.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(writer.Start),
 	)
