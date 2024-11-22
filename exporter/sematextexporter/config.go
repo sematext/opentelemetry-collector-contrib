@@ -40,6 +40,7 @@ type MetricsConfig struct {
 	PayloadMaxBytes  int                        `mapstructure:"payload_max_bytes"`
 }
 type LogsConfig struct {
+	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	AppToken string `mapstructure:"app_token"`
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
 	LogsMapping LogMapping `mapstructure:"logs_mapping"`
