@@ -6,11 +6,10 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
-	"time"
+	a"sync/atomic"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 )
 
 type Config struct {
@@ -40,96 +39,17 @@ type MetricsConfig struct {
 	PayloadMaxBytes  int                        `mapstructure:"payload_max_bytes"`
 }
 type LogsConfig struct {
-	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	AppToken string `mapstructure:"app_token"`
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
-	LogsMapping LogMapping `mapstructure:"logs_mapping"`
-	LogsFlushSettings FlushSettings `mapstructure:"logs_flush_settings"`
-	// TelemetrySettings contains settings useful for testing/debugging purposes
-	// This is experimental and may change at any time.
-	TelemetrySettings `mapstructure:"telemetry"`
-
-	// Batcher holds configuration for batching requests based on timeout
-	// and size-based thresholds.
-	//
-	// Batcher is unused by default, in which case Flush will be used.
-	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
-	// then the Flush will be ignored even if Batcher.Enabled is false.
-	Batcher BatcherConfig `mapstructure:"batcher"`
-}
-// BatcherConfig holds configuration for exporterbatcher.
-//
-// This is a slightly modified version of exporterbatcher.Config,
-// to enable tri-state Enabled: unset, false, true.
-type BatcherConfig struct {
-	// Enabled indicates whether to enqueue batches before sending
-	// to the exporter. If Enabled is specified (non-nil),
-	// then the exporter will not perform any buffering itself.
-	Enabled *bool `mapstructure:"enabled"`
-
-	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
-	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
-
-	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
-	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
+	LogRequests bool 
+	LogMaxAge int `mapstructure:"logs_endpoint"`
+	LogMaxBackups int `mapstructure:"logs_endpoint"`
+	LogMaxSize int `mapstructure:"logs_endpoint"`
+	// WriteEvents determines if events are logged
+	WriteEvents a.Bool `yaml:"logging.write-events"`
 }
 
-type TelemetrySettings struct {
-	LogRequestBody  bool `mapstructure:"log_request_body"`
-	LogResponseBody bool `mapstructure:"log_response_body"`
-}
-// FlushSettings defines settings for configuring the write buffer flushing
-// policy in the Elasticsearch exporter. The exporter sends a bulk request with
-// all events already serialized into the send-buffer.
-type FlushSettings struct {
-	// Bytes sets the send buffer flushing limit.
-	Bytes int `mapstructure:"bytes"`
 
-	// Interval configures the max age of a document in the send buffer.
-	Interval time.Duration `mapstructure:"interval"`
-}
-type LogMapping struct {
-    Mode string `mapstructure:"mode"`
-}
-//This mapping is going to be None, will remove it if after building the exporter we realize we do not need it
-type MappingMode int
-const (
-	MappingNone MappingMode = iota
-	MappingECS
-	MappingOTel
-	MappingRaw
-) 
-func (m MappingMode) String() string {
-	switch m {
-	case MappingNone:
-		return ""
-	case MappingECS:
-		return "ecs"
-	case MappingOTel:
-		return "otel"
-	case MappingRaw:
-		return "raw"
-	default:
-		return ""
-	}
-}
-var mappingModes = func() map[string]MappingMode {
-	table := map[string]MappingMode{}
-	for _, m := range []MappingMode{
-		MappingNone,
-		MappingECS,
-		MappingOTel,
-		MappingRaw,
-	} {
-		table[strings.ToLower(m.String())] = m
-	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
-
-	return table
-}()
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" && strings.ToLower(cfg.Region) != "custom"{
@@ -149,12 +69,15 @@ func (cfg *Config) Validate() error {
 		cfg.MetricsEndpoint ="https://spm-receiver.sematext.com"
 		cfg.LogsEndpoint = "logsene-receiver.sematext.com/_bulk"
 	}
-	if _, ok := mappingModes[cfg.LogsMapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %q", cfg.LogsMapping.Mode)
-	}
 
 	return nil
 }
-func (cfg *Config) MappingMode() MappingMode {
-	return mappingModes[cfg.LogsMapping.Mode]
-}
+
+// Bool provides an atomic boolean type.
+type Bool struct{ u Uint32 }
+// Uint32 provides an atomic uint32 type.
+type Uint32 struct{ value uint32 }
+// Load gets the value of atomic boolean.
+func (b *Bool) Load() bool { return b.u.Load() == 1 }
+// Load get the value of atomic integer.
+func (u *Uint32) Load() uint32 { return a.LoadUint32(&u.value) }
