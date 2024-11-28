@@ -42,11 +42,11 @@ type LogsConfig struct {
 	AppToken string `mapstructure:"app_token"`
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
 	LogRequests bool 
-	LogMaxAge int `mapstructure:"logs_endpoint"`
-	LogMaxBackups int `mapstructure:"logs_endpoint"`
-	LogMaxSize int `mapstructure:"logs_endpoint"`
+	LogMaxAge int `mapstructure:"logs_max_age"`
+	LogMaxBackups int `mapstructure:"logs_max_backups"`
+	LogMaxSize int `mapstructure:"logs_max_size"`
 	// WriteEvents determines if events are logged
-	WriteEvents a.Bool `yaml:"logging.write-events"`
+	WriteEvents a.Bool 
 }
 
 
