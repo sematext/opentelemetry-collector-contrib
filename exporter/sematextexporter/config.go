@@ -41,12 +41,12 @@ type MetricsConfig struct {
 type LogsConfig struct {
 	AppToken string `mapstructure:"app_token"`
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
-	LogRequests bool 
+	LogRequests bool `mapstructure:"logs_requests"`
 	LogMaxAge int `mapstructure:"logs_max_age"`
 	LogMaxBackups int `mapstructure:"logs_max_backups"`
 	LogMaxSize int `mapstructure:"logs_max_size"`
 	// WriteEvents determines if events are logged
-	WriteEvents a.Bool 
+	WriteEvents a.Bool
 }
 
 

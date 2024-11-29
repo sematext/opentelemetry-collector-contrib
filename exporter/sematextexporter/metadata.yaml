@@ -3,7 +3,7 @@ type: sematext
 status:
   class: exporter
   stability:
-    development: [metrics]
+    development: [metrics,logs]
   distributions: [contrib]
   codeowners:
     active: [Eromosele-SM]

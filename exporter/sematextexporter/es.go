@@ -65,47 +65,62 @@ func NewClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 }
 
 func (c *client) Bulk(body interface{}, config *Config) error {
-	// lookup for client by endpoint
-	if grp, ok := c.clients[config.LogsEndpoint]; ok {
-		// build bulk request for each element
-		// in the underlying slice
-		bulkRequest := grp.client.Bulk()
-		if reflect.TypeOf(body).Kind() == reflect.Slice {
-			v := reflect.ValueOf(body)
-			for i := 0; i < v.Len(); i++ {
-				req := elastic.NewBulkIndexRequest().Index(grp.token).Type(artificialDocType).Doc(v.Index(i).Interface())
-				bulkRequest.Add(req)
-			}
-		}
-		if bulkRequest.NumberOfActions() > 0 {
-			if c.config.LogRequests {
-				c.logger.Infof("sending bulk to %s", config.LogsEndpoint)
-			}
-			// required for writing events to log file
-			p, err := json.Marshal(body)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			defer cancel()
-			res, err := bulkRequest.Do(ctx)
-			if err != nil {
-				c.writePayload(string(p), err.Error())
-				return err
-			}
-			if res.Errors {
-				for _, item := range res.Failed() {
-					if item.Error != nil {
-						c.logger.Errorf("document %s failed to index: %s - %s", item.Id, item.Error.Type, item.Error.Reason)
-					}
-				}
-			}
-			c.writePayload(string(p), "200")
-			return nil
-		}
-	}
-	return fmt.Errorf("no client known for %s endpoint", config.LogsEndpoint)
+    // Lookup for client by endpoint
+    if grp, ok := c.clients[config.LogsEndpoint]; ok {
+        bulkRequest := grp.client.Bulk()
+
+        // Dynamically process the body as a slice
+        if reflect.TypeOf(body).Kind() == reflect.Slice {
+            v := reflect.ValueOf(body)
+            for i := 0; i < v.Len(); i++ {
+                req := elastic.NewBulkIndexRequest().
+                    Index(grp.token).
+                    Type(artificialDocType).
+                    Doc(v.Index(i).Interface())
+                bulkRequest.Add(req)
+            }
+        }
+
+        if bulkRequest.NumberOfActions() > 0 {
+            // Serialize the payload for debugging or printing
+            payloadBytes, err := json.Marshal(body)
+            if err != nil {
+                return fmt.Errorf("failed to serialize payload: %w", err)
+            }
+
+            // Print or log the payload
+            fmt.Printf("Payload being sent to Sematext:\n%s\n", string(payloadBytes))
+
+            if c.config.LogRequests {
+                c.logger.Infof("Sending bulk to %s", config.LogsEndpoint)
+            }
+
+            ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+            defer cancel()
+
+            // Send the payload
+            res, err := bulkRequest.Do(ctx)
+            if err != nil {
+                c.writePayload(string(payloadBytes), err.Error())
+                return err
+            }
+
+            // Check for errors in the response
+            if res.Errors {
+                for _, item := range res.Failed() {
+                    if item.Error != nil {
+                        c.logger.Errorf("Document %s failed to index: %s - %s", item.Id, item.Error.Type, item.Error.Reason)
+                    }
+                }
+            }
+
+            c.writePayload(string(payloadBytes), "200")
+            return nil
+        }
+    }
+    return fmt.Errorf("no client known for %s endpoint", config.LogsEndpoint)
 }
+
 
 func (c *client) writePayload(payload string, status string) {
 	if c.config.WriteEvents.Load() {
