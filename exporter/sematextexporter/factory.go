@@ -115,7 +115,7 @@ func createLogsExporter(
 	set.Logger.Info("Creating Sematext Logs Exporter")
 
 	// Create the Sematext logs exporter
-	exporter := NewExporter(cf, set)
+	exporter := newExporter(cf, set)
 
 	// Wrap the exporter with OpenTelemetry helper functions
 	return exporterhelper.NewLogsExporter(

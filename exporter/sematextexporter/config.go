@@ -63,11 +63,11 @@ func (cfg *Config) Validate() error {
 	}
 	if strings.ToLower(cfg.Region) == "eu" {
 		cfg.MetricsEndpoint ="https://spm-receiver.eu.sematext.com"
-		cfg.LogsEndpoint ="logsene-receiver.eu.sematext.com/_bulk"
+		cfg.LogsEndpoint ="https://logsene-receiver.eu.sematext.com"
 	}
 	if strings.ToLower(cfg.Region) == "us"{
 		cfg.MetricsEndpoint ="https://spm-receiver.sematext.com"
-		cfg.LogsEndpoint = "logsene-receiver.sematext.com/_bulk"
+		cfg.LogsEndpoint = "https://logsene-receiver.sematext.com"
 	}
 
 	return nil

@@ -16,11 +16,6 @@ import (
 	json "github.com/json-iterator/go"
 )
 
-const (
-	// artificialDocType designates a syntenic doc type for ES documents
-	artificialDocType = "_doc" 
-)
-
 type group struct {
 	client *elastic.Client
 	token  string
@@ -49,7 +44,6 @@ func NewClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 		if err != nil {
 			return nil, err
 		}
-		// clients := map[string]group{}
 		clients[config.LogsEndpoint] = group{
             client: c,
             token:  config.LogsConfig.AppToken,
@@ -74,9 +68,8 @@ func (c *client) Bulk(body interface{}, config *Config) error {
             v := reflect.ValueOf(body)
             for i := 0; i < v.Len(); i++ {
                 req := elastic.NewBulkIndexRequest().
-                    Index(grp.token).
-                    Type(artificialDocType).
-                    Doc(v.Index(i).Interface())
+						Index(grp.token).
+						Doc(v.Index(i).Interface())
                 bulkRequest.Add(req)
             }
         }
@@ -125,7 +118,9 @@ func (c *client) Bulk(body interface{}, config *Config) error {
 func (c *client) writePayload(payload string, status string) {
 	if c.config.WriteEvents.Load() {
 		c.writer.Write(Formatl(payload, status))
-	}
+	} else {
+        c.logger.Debugf("WriteEvents disabled. Payload: %s, Status: %s", payload, status)
+    }
 }
 // Formatl delimits and formats the response returned by receiver.
 func Formatl(payload string, status string) string {
