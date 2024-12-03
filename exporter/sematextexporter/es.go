@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
+	"os"
 	"github.com/olivere/elastic"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -15,7 +15,8 @@ import (
 
 	json "github.com/json-iterator/go"
 )
-
+// artificialDocType designates a syntenic doc type for ES documents
+const artificialDocType = "_doc"
 type group struct {
 	client *elastic.Client
 	token  string
@@ -58,6 +59,7 @@ func NewClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 	}, nil
 }
 
+
 func (c *client) Bulk(body interface{}, config *Config) error {
     // Lookup for client by endpoint
     if grp, ok := c.clients[config.LogsEndpoint]; ok {
@@ -67,9 +69,18 @@ func (c *client) Bulk(body interface{}, config *Config) error {
         if reflect.TypeOf(body).Kind() == reflect.Slice {
             v := reflect.ValueOf(body)
             for i := 0; i < v.Len(); i++ {
+                doc := v.Index(i).Interface()
+
+                // Ensure the document is a map to add the hostname tag
+                if docMap, ok := doc.(map[string]interface{}); ok {
+                    docMap["os.host"] = getHostname()
+
+                }
+
                 req := elastic.NewBulkIndexRequest().
-						Index(grp.token).
-						Doc(v.Index(i).Interface())
+                    Index(grp.token).
+					Type(artificialDocType).
+                    Doc(doc)
                 bulkRequest.Add(req)
             }
         }
@@ -131,3 +142,10 @@ func Formatl(payload string, status string) string {
 	}
 	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
 }
+func getHostname() (string) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "None"
+	}
+	return hostname
+}	
