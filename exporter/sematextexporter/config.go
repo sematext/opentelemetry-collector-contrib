@@ -20,7 +20,9 @@ type Config struct {
 	// - EU
 	// - US
 	Region string `mapstructure:"region"`
+	// MetricsConfig defines the configuration specific to metrics 
 	MetricsConfig `mapstructure:"metrics"`
+	// LogsConfig defines the configuration specific to logs
 	LogsConfig `mapstructure:"logs"`
 }
 
@@ -39,11 +41,17 @@ type MetricsConfig struct {
 	PayloadMaxBytes  int                        `mapstructure:"payload_max_bytes"`
 }
 type LogsConfig struct {
+	// App token is the token of Sematext Monitoring App to which you want to send the logs.
 	AppToken string `mapstructure:"app_token"`
+	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
 	LogsEndpoint string  `mapstructure:"logs_endpoint"`
+	// LogRequests determines whether request tracking is enabled
 	LogRequests bool `mapstructure:"logs_requests"`
+	// LogMaxAge is the max number of days to retain old log files
 	LogMaxAge int `mapstructure:"logs_max_age"`
+	// LogMaxBackups is the maximum number of old log files to retain.
 	LogMaxBackups int `mapstructure:"logs_max_backups"`
+	// LogMaxSize is the maximum size in megabytes of the log file before it gets rotated
 	LogMaxSize int `mapstructure:"logs_max_size"`
 	// WriteEvents determines if events are logged
 	WriteEvents a.Bool

@@ -261,13 +261,13 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 	return
 }
 //Logs Support
+
 // FlatWriter writes a raw message to log file.
 type FlatWriter struct {
 	l *logrus.Logger
 }
 
-// NewFlatWriter creates a new instance of flat writer. If we detect agent running inside container
-// we'll write to stdout stream instead of the provided log file.
+// NewFlatWriter creates a new instance of flat writer.
 func NewFlatWriter(f string, c *Config) (*FlatWriter, error) {
 	l := logrus.New()
 	l.Out = io.Discard

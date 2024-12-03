@@ -111,21 +111,18 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	// Log the creation of the exporter
 	set.Logger.Info("Creating Sematext Logs Exporter")
 
-	// Create the Sematext logs exporter
 	exporter := newExporter(cf, set)
 
-	// Wrap the exporter with OpenTelemetry helper functions
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
 		exporter.pushLogsData, // Function to process and send logs
-		exporterhelper.WithQueue(cf.MetricsConfig.QueueSettings), // Optional queue settings
-		exporterhelper.WithRetry(cf.BackOffConfig),               // Optional retry settings
-		exporterhelper.WithStart(exporter.Start),                 // Lifecycle start function
-		exporterhelper.WithShutdown(exporter.Shutdown),           // Lifecycle shutdown function
+		exporterhelper.WithQueue(cf.MetricsConfig.QueueSettings),
+		exporterhelper.WithRetry(cf.BackOffConfig),
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }

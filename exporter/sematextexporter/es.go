@@ -59,19 +59,14 @@ func NewClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 	}, nil
 }
 
-
+// Bulk processes a batch of documents and sends them to the specified LogsEndpoint.
 func (c *client) Bulk(body interface{}, config *Config) error {
-    // Lookup for client by endpoint
     if grp, ok := c.clients[config.LogsEndpoint]; ok {
         bulkRequest := grp.client.Bulk()
-
-        // Dynamically process the body as a slice
         if reflect.TypeOf(body).Kind() == reflect.Slice {
             v := reflect.ValueOf(body)
             for i := 0; i < v.Len(); i++ {
                 doc := v.Index(i).Interface()
-
-                // Ensure the document is a map to add the hostname tag
                 if docMap, ok := doc.(map[string]interface{}); ok {
                     docMap["os.host"] = getHostname()
 
@@ -86,13 +81,12 @@ func (c *client) Bulk(body interface{}, config *Config) error {
         }
 
         if bulkRequest.NumberOfActions() > 0 {
-            // Serialize the payload for debugging or printing
             payloadBytes, err := json.Marshal(body)
             if err != nil {
                 return fmt.Errorf("failed to serialize payload: %w", err)
             }
 
-            // Print or log the payload
+            // Print or log the payload(Will delete this once everything is good)
             fmt.Printf("Payload being sent to Sematext:\n%s\n", string(payloadBytes))
 
             if c.config.LogRequests {
@@ -101,15 +95,11 @@ func (c *client) Bulk(body interface{}, config *Config) error {
 
             ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
             defer cancel()
-
-            // Send the payload
             res, err := bulkRequest.Do(ctx)
             if err != nil {
                 c.writePayload(string(payloadBytes), err.Error())
                 return err
             }
-
-            // Check for errors in the response
             if res.Errors {
                 for _, item := range res.Failed() {
                     if item.Error != nil {
@@ -125,7 +115,7 @@ func (c *client) Bulk(body interface{}, config *Config) error {
     return fmt.Errorf("no client known for %s endpoint", config.LogsEndpoint)
 }
 
-
+// writePayload writes a formatted payload along with its status to the configured writer.
 func (c *client) writePayload(payload string, status string) {
 	if c.config.WriteEvents.Load() {
 		c.writer.Write(Formatl(payload, status))
@@ -133,6 +123,7 @@ func (c *client) writePayload(payload string, status string) {
         c.logger.Debugf("WriteEvents disabled. Payload: %s, Status: %s", payload, status)
     }
 }
+
 // Formatl delimits and formats the response returned by receiver.
 func Formatl(payload string, status string) string {
 	s := strings.TrimLeft(status, "\n")
@@ -142,6 +133,8 @@ func Formatl(payload string, status string) string {
 	}
 	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
 }
+
+// getHostname retrieves the current machine's hostname.
 func getHostname() (string) {
 	hostname, err := os.Hostname()
 	if err != nil {
