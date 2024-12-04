@@ -10,12 +10,14 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"bytes"
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"github.com/sirupsen/logrus"
 )
 
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
@@ -218,4 +220,82 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
 	})
+}
+func TestNewFlatWriter(t *testing.T) {
+	config := &Config{
+		LogsConfig: LogsConfig{
+		LogMaxAge:     7,
+		LogMaxBackups: 5,
+		LogMaxSize:    10,
+		},
+		
+	}
+	writer, err := NewFlatWriter("test.log", config)
+	assert.NoError(t, err)
+	assert.NotNil(t, writer)
+	assert.NotNil(t, writer.l)
+}
+func TestFlatWriterWrite(t *testing.T) {
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	writer := &FlatWriter{l: logger}
+
+	message := "test message"
+	writer.Write(message)
+
+	assert.Contains(t, buf.String(), message)
+}
+func TestInitRotate(t *testing.T) {
+	hook, err := InitRotate("test.log", 7, 5, 10, &FlatFormatter{})
+	assert.NoError(t, err)
+	assert.NotNil(t, hook)
+}
+func TestNewRotateFile(t *testing.T) {
+	config := RotateFileConfig{
+		Filename:   "test.log",
+		MaxSize:    10,
+		MaxBackups: 5,
+		MaxAge:     7,
+		Level:      logrus.InfoLevel,
+		Formatter:  &FlatFormatter{},
+	}
+
+	hook, err := NewRotateFile(config)
+	assert.NoError(t, err)
+	assert.NotNil(t, hook)
+}
+func TestRotateFileFire(t *testing.T) {
+	var buf bytes.Buffer
+
+	hook := &RotateFile{
+		Config: RotateFileConfig{
+			Filename:   "test.log",
+			MaxSize:    10,
+			MaxBackups: 5,
+			MaxAge:     7,
+			Level:      logrus.InfoLevel,
+			Formatter:  &logrus.TextFormatter{},
+		},
+		logWriter: &buf,
+	}
+
+	entry := &logrus.Entry{
+		Message: "test entry",
+		Level:   logrus.InfoLevel,
+	}
+
+	err := hook.Fire(entry)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "test entry")
+}
+func TestRotateFileLevels(t *testing.T) {
+	hook := &RotateFile{
+		Config: RotateFileConfig{
+			Level: logrus.WarnLevel,
+		},
+	}
+
+	expectedLevels := logrus.AllLevels[:logrus.WarnLevel+1]
+	assert.Equal(t, expectedLevels, hook.Levels())
 }
