@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/influxdata/influxdb-observability/otel2influx"
-	"sync/atomic"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -55,7 +54,7 @@ func createDefaultConfig() component.Config {
 			LogRequests:true,
 			LogMaxAge: 2,
 			LogMaxSize: 10,
-			WriteEvents: atomic.Bool{},
+			LogMaxBackups: 10,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		Region:          "custom",
