@@ -16,15 +16,15 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/natefinch/lumberjack.v2"
-	fs "github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
+	fs "github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var _ otel2influx.InfluxWriter = (*sematextHTTPWriter)(nil)
@@ -63,13 +63,13 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 				return e
 			},
 		},
-		telemetrySettings:  telemetrySettings,
-		writeURL:           writeURL,
-		payloadMaxLines:    config.PayloadMaxLines,
-		payloadMaxBytes:    config.PayloadMaxBytes,
-		logger:             logger,
-		hostname:           hostname,
-		token:              config.MetricsConfig.AppToken,
+		telemetrySettings: telemetrySettings,
+		writeURL:          writeURL,
+		payloadMaxLines:   config.PayloadMaxLines,
+		payloadMaxBytes:   config.PayloadMaxBytes,
+		logger:            logger,
+		hostname:          hostname,
+		token:             config.MetricsConfig.AppToken,
 	}, nil
 }
 
@@ -194,13 +194,13 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	}
 
 	switch res.StatusCode {
-		case 200, 204:
-			break
-		case 500:
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default:
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	case 200, 204:
+		break
+	case 500:
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default:
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
+	}
 
 	return nil
 }
@@ -260,6 +260,7 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 	}
 	return
 }
+
 //Logs Support
 
 // FlatWriter writes a raw message to log file.
@@ -271,7 +272,7 @@ type FlatWriter struct {
 func NewFlatWriter(f string, c *Config) (*FlatWriter, error) {
 	l := logrus.New()
 	l.Out = io.Discard
-	
+
 	hook, err := InitRotate(
 		f,
 		c.LogMaxAge,
@@ -316,6 +317,7 @@ func InitRotate(filePath string, maxAge, maxBackups, maxSize int, f logrus.Forma
 	}
 	return h, nil
 }
+
 // RotateFileConfig is the configuration for the rotate file hook.
 type RotateFileConfig struct {
 	Filename   string
@@ -325,6 +327,7 @@ type RotateFileConfig struct {
 	Level      logrus.Level
 	Formatter  logrus.Formatter
 }
+
 // RotateFile represents the rotate file hook.
 type RotateFile struct {
 	Config    RotateFileConfig
@@ -345,6 +348,7 @@ func NewRotateFile(config RotateFileConfig) (logrus.Hook, error) {
 	}
 	return &hook, nil
 }
+
 // Fire is called by logrus when it is about to write the log entry.
 func (hook *RotateFile) Fire(entry *logrus.Entry) error {
 	b, err := hook.Config.Formatter.Format(entry)
@@ -356,6 +360,7 @@ func (hook *RotateFile) Fire(entry *logrus.Entry) error {
 	}
 	return nil
 }
+
 // Levels determines log levels that for which the logs are written.
 func (hook *RotateFile) Levels() []logrus.Level {
 	return logrus.AllLevels[:hook.Config.Level+1]

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -17,12 +18,12 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"github.com/influxdata/influxdb-observability/common"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
 const appToken string = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -34,7 +35,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	
+
 	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
@@ -44,20 +45,20 @@ func createDefaultConfig() component.Config {
 		},
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-			AppToken:       appToken,
+			AppToken:        appToken,
 			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
 		LogsConfig: LogsConfig{
-			AppToken: appToken,
-			LogRequests:true,
-			LogMaxAge: 2,
-			LogMaxSize: 10,
+			AppToken:      appToken,
+			LogRequests:   true,
+			LogMaxAge:     2,
+			LogMaxSize:    10,
 			LogMaxBackups: 10,
 		},
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		Region:          "custom",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		Region:        "custom",
 	}
 	cfg.LogsConfig.WriteEvents.Store(false)
 	return cfg
@@ -102,6 +103,7 @@ func createMetricsExporter(
 		exporterhelper.WithStart(writer.Start),
 	)
 }
+
 // createLogsExporter creates a new logs exporter for Sematext.
 func createLogsExporter(
 	ctx context.Context,

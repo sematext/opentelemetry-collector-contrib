@@ -5,8 +5,9 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const defaultTimestampFormat = time.RFC3339

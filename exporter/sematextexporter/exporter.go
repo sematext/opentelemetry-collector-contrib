@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -16,6 +17,7 @@ type sematextLogsExporter struct {
 	client Client
 	logger *logrus.Logger
 }
+
 // newExporter creates a new instance of the sematextLogsExporter.
 func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 	logger := logrus.New()
@@ -37,26 +39,27 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 
 // pushLogsData processes and sends log data to Sematext in bulk.
 func (e *sematextLogsExporter) pushLogsData(ctx context.Context, logs plog.Logs) error {
-    // Convert logs to bulk payload
-    bulkPayload, err := convertLogsToBulkPayload(logs, e.config.LogsConfig.AppToken)
-    if err != nil {
-        e.logger.Errorf("Failed to convert logs: %v", err)
-        return err
-    }
+	// Convert logs to bulk payload
+	bulkPayload, err := convertLogsToBulkPayload(logs, e.config.LogsConfig.AppToken)
+	if err != nil {
+		e.logger.Errorf("Failed to convert logs: %v", err)
+		return err
+	}
 
-    // Debug: Print the bulk payload
-    for _, payload := range bulkPayload {
-        fmt.Printf("Bulk payload: %v\n", payload)
-    }
+	// Debug: Print the bulk payload
+	for _, payload := range bulkPayload {
+		fmt.Printf("Bulk payload: %v\n", payload)
+	}
 
-    // Send the bulk payload to Sematext
-    if err := e.client.Bulk(bulkPayload, e.config); err != nil {
-        e.logger.Errorf("Failed to send logs to Sematext: %v", err)
-        return err
-    }
+	// Send the bulk payload to Sematext
+	if err := e.client.Bulk(bulkPayload, e.config); err != nil {
+		e.logger.Errorf("Failed to send logs to Sematext: %v", err)
+		return err
+	}
 
-    return nil
+	return nil
 }
+
 // convertLogsToBulkPayload converts OpenTelemetry log data into a bulk payload for Sematext.
 func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]interface{}, error) {
 	var bulkPayload []map[string]interface{}
@@ -92,14 +95,16 @@ func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]int
 
 	return bulkPayload, nil
 }
+
 // Start initializes the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Start(ctx context.Context, host component.Host) error {
-    if e.client == nil {
-        return fmt.Errorf("sematext client is not initialized")
-    }
-    e.logger.Info("Starting Sematext Logs Exporter...")
-    return nil
+	if e.client == nil {
+		return fmt.Errorf("sematext client is not initialized")
+	}
+	e.logger.Info("Starting Sematext Logs Exporter...")
+	return nil
 }
+
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Shutdown(ctx context.Context) error {
 	e.logger.Info("Shutting down Sematext Logs Exporter...")

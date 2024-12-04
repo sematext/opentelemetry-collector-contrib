@@ -1,6 +1,7 @@
 package sematextexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,14 +11,13 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"bytes"
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"github.com/sirupsen/logrus"
 )
 
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
@@ -166,10 +166,10 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		new(common.NoopLogger),
 		&Config{
 			MetricsConfig: MetricsConfig{
-				MetricsEndpoint:noopHTTPServer.URL ,
-				AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				MetricsEndpoint: noopHTTPServer.URL,
+				AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			},
-			Region:    "US",
+			Region: "US",
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -180,9 +180,9 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		context.Background(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
-		map[string]any{"f": int64(1)},        
-		nowTime,                               
-		common.InfluxMetricValueTypeUntyped) 
+		map[string]any{"f": int64(1)},
+		nowTime,
+		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
 
 	err = sematextWriterBatch.WriteBatch(context.Background())
@@ -190,7 +190,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {
-		expected:= fmt.Sprintf("m,k=v,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
+		expected := fmt.Sprintf("m,k=v,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
@@ -201,7 +201,7 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "us",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
 		}
 		_, err := composeWriteURL(cfg)
@@ -213,9 +213,8 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "eu",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
-
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
@@ -224,11 +223,10 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 func TestNewFlatWriter(t *testing.T) {
 	config := &Config{
 		LogsConfig: LogsConfig{
-		LogMaxAge:     7,
-		LogMaxBackups: 5,
-		LogMaxSize:    10,
+			LogMaxAge:     7,
+			LogMaxBackups: 5,
+			LogMaxSize:    10,
 		},
-		
 	}
 	writer, err := NewFlatWriter("test.log", config)
 	assert.NoError(t, err)

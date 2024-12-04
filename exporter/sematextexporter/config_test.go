@@ -39,8 +39,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Timeout:  500 * time.Millisecond,
-					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
+					Timeout: 500 * time.Millisecond,
+					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: "https://spm-receiver.sematext.com",
@@ -49,20 +49,20 @@ func TestLoadConfig(t *testing.T) {
 						NumConsumers: 3,
 						QueueSize:    10,
 					},
-					AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					MetricsSchema:   "telegraf-prometheus-v2",
 					PayloadMaxLines: 72,
 					PayloadMaxBytes: 27,
 				},
 				LogsConfig: LogsConfig{
-					AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					LogsEndpoint:   "https://logsene-receiver.sematext.com",
-					LogRequests:    true,
-					LogMaxAge:      2,
-					LogMaxBackups:  10,
-					LogMaxSize:     10,
+					AppToken:      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					LogsEndpoint:  "https://logsene-receiver.sematext.com",
+					LogRequests:   true,
+					LogMaxAge:     2,
+					LogMaxBackups: 10,
+					LogMaxSize:    10,
 				},
-			
+
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     1 * time.Second,
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				Region:          "US",
+				Region: "US",
 			},
 		},
 	}
