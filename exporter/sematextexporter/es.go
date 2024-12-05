@@ -38,7 +38,7 @@ type Client interface {
 
 // NewClient creates a new instance of ES client that internally stores a reference
 // to both, event and log receivers.
-func NewClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client, error) {
+func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client, error) {
 	clients := make(map[string]group)
 
 	// client for shipping to logsene
@@ -119,14 +119,14 @@ func (c *client) Bulk(body interface{}, config *Config) error {
 // writePayload writes a formatted payload along with its status to the configured writer.
 func (c *client) writePayload(payload string, status string) {
 	if c.config.WriteEvents.Load() {
-		c.writer.Write(Formatl(payload, status))
+		c.writer.Write(formatl(payload, status))
 	} else {
 		c.logger.Debugf("WriteEvents disabled. Payload: %s, Status: %s", payload, status)
 	}
 }
 
 // Formatl delimits and formats the response returned by receiver.
-func Formatl(payload string, status string) string {
+func formatl(payload string, status string) string {
 	s := strings.TrimLeft(status, "\n")
 	i := strings.Index(s, "\n")
 	if i > 0 {

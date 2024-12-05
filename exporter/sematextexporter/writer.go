@@ -267,11 +267,11 @@ type FlatWriter struct {
 }
 
 // NewFlatWriter creates a new instance of flat writer.
-func NewFlatWriter(f string, c *Config) (*FlatWriter, error) {
+func newFlatWriter(f string, c *Config) (*FlatWriter, error) {
 	l := logrus.New()
 	l.Out = io.Discard
 
-	hook, err := InitRotate(
+	hook, err := initRotate(
 		f,
 		c.LogMaxAge,
 		c.LogMaxBackups,
@@ -295,8 +295,8 @@ func (w *FlatWriter) Write(message string) {
 
 // InitRotate returns a new fs hook that enables log file rotation with specified pattern,
 // maximum size/TTL for existing log files.
-func InitRotate(filePath string, maxAge, maxBackups, maxSize int, f logrus.Formatter) (logrus.Hook, error) {
-	h, err := NewRotateFile(RotateFileConfig{
+func initRotate(filePath string, maxAge, maxBackups, maxSize int, f logrus.Formatter) (logrus.Hook, error) {
+	h, err := newRotateFile(RotateFileConfig{
 		Filename:   filePath,
 		MaxAge:     maxAge,
 		MaxBackups: maxBackups,
@@ -333,7 +333,7 @@ type RotateFile struct {
 }
 
 // NewRotateFile builds a new rotate file hook.
-func NewRotateFile(config RotateFileConfig) (logrus.Hook, error) {
+func newRotateFile(config RotateFileConfig) (logrus.Hook, error) {
 	hook := RotateFile{
 		Config: config,
 	}

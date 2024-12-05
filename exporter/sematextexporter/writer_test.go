@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sematextexporter
 
 import (
@@ -228,7 +231,7 @@ func TestNewFlatWriter(t *testing.T) {
 			LogMaxSize:    10,
 		},
 	}
-	writer, err := NewFlatWriter("test.log", config)
+	writer, err := newFlatWriter("test.log", config)
 	assert.NoError(t, err)
 	assert.NotNil(t, writer)
 	assert.NotNil(t, writer.l)
@@ -247,7 +250,7 @@ func TestFlatWriterWrite(t *testing.T) {
 }
 
 func TestInitRotate(t *testing.T) {
-	hook, err := InitRotate("test.log", 7, 5, 10, &FlatFormatter{})
+	hook, err := initRotate("test.log", 7, 5, 10, &FlatFormatter{})
 	assert.NoError(t, err)
 	assert.NotNil(t, hook)
 }
@@ -262,7 +265,7 @@ func TestNewRotateFile(t *testing.T) {
 		Formatter:  &FlatFormatter{},
 	}
 
-	hook, err := NewRotateFile(config)
+	hook, err := newRotateFile(config)
 	assert.NoError(t, err)
 	assert.NotNil(t, hook)
 }

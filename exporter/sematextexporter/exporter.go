@@ -1,4 +1,7 @@
-package sematextexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 
 import (
 	"context"
@@ -24,7 +27,7 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 	logger.SetFormatter(&FlatFormatter{})
 
 	// Initialize Sematext client
-	client, err := NewClient(cfg, logger, FlatWriter{})
+	client, err := newClient(cfg, logger, FlatWriter{})
 	if err != nil {
 		set.Logger.Error("Failed to create Sematext client", zap.Error(err))
 		return nil
