@@ -55,7 +55,7 @@ type LogsConfig struct {
 	// LogMaxSize is the maximum size in megabytes of the log file before it gets rotated
 	LogMaxSize int `mapstructure:"logs_max_size"`
 	// WriteEvents determines if events are logged
-	WriteEvents atomic.Bool
+	WriteEvents atomic.Bool `mapstructure:"write_events"`
 }
 
 // Validate checks for invalid or missing entries in the configuration.
