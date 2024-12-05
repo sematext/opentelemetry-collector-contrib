@@ -6,7 +6,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
-	a "sync/atomic"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -55,7 +55,7 @@ type LogsConfig struct {
 	// LogMaxSize is the maximum size in megabytes of the log file before it gets rotated
 	LogMaxSize int `mapstructure:"logs_max_size"`
 	// WriteEvents determines if events are logged
-	WriteEvents a.Bool
+	WriteEvents atomic.Bool
 }
 
 // Validate checks for invalid or missing entries in the configuration.
@@ -91,4 +91,4 @@ type Uint32 struct{ value uint32 }
 func (b *Bool) Load() bool { return b.u.Load() == 1 }
 
 // Load get the value of atomic integer.
-func (u *Uint32) Load() uint32 { return a.LoadUint32(&u.value) }
+func (u *Uint32) Load() uint32 { return atomic.LoadUint32(&u.value) }
