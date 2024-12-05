@@ -334,6 +334,9 @@ type RotateFile struct {
 
 // NewRotateFile builds a new rotate file hook.
 func newRotateFile(config RotateFileConfig) (logrus.Hook, error) {
+	if config.Filename == "" {
+		return nil, fmt.Errorf("filename is required")
+	}
 	hook := RotateFile{
 		Config: config,
 	}

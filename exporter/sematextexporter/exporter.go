@@ -100,7 +100,7 @@ func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]int
 }
 
 // Start initializes the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Start(_ context.Context, host component.Host) error {
+func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error {
 	if e.client == nil {
 		return fmt.Errorf("sematext client is not initialized")
 	}
@@ -110,6 +110,9 @@ func (e *sematextLogsExporter) Start(_ context.Context, host component.Host) err
 
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
+	if e.logger == nil {
+        return fmt.Errorf("logger is not initialized")
+    }
 	e.logger.Info("Shutting down Sematext Logs Exporter...")
 	return nil
 }
