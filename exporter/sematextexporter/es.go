@@ -7,12 +7,11 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/olivere/elastic"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-
-	"time"
 
 	json "github.com/json-iterator/go"
 )
@@ -72,7 +71,6 @@ func (c *client) Bulk(body interface{}, config *Config) error {
 				doc := v.Index(i).Interface()
 				if docMap, ok := doc.(map[string]interface{}); ok {
 					docMap["os.host"] = getHostname()
-
 				}
 
 				req := elastic.NewBulkIndexRequest().

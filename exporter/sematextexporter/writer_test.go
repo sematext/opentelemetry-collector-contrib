@@ -149,7 +149,6 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-
 		if assert.Nil(t, recordedRequest) {
 			var err error
 			recordedRequest = r
@@ -220,6 +219,7 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestNewFlatWriter(t *testing.T) {
 	config := &Config{
 		LogsConfig: LogsConfig{
@@ -233,6 +233,7 @@ func TestNewFlatWriter(t *testing.T) {
 	assert.NotNil(t, writer)
 	assert.NotNil(t, writer.l)
 }
+
 func TestFlatWriterWrite(t *testing.T) {
 	var buf bytes.Buffer
 	logger := logrus.New()
@@ -244,11 +245,13 @@ func TestFlatWriterWrite(t *testing.T) {
 
 	assert.Contains(t, buf.String(), message)
 }
+
 func TestInitRotate(t *testing.T) {
 	hook, err := InitRotate("test.log", 7, 5, 10, &FlatFormatter{})
 	assert.NoError(t, err)
 	assert.NotNil(t, hook)
 }
+
 func TestNewRotateFile(t *testing.T) {
 	config := RotateFileConfig{
 		Filename:   "test.log",
@@ -263,6 +266,7 @@ func TestNewRotateFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, hook)
 }
+
 func TestRotateFileFire(t *testing.T) {
 	var buf bytes.Buffer
 
@@ -287,6 +291,7 @@ func TestRotateFileFire(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "test entry")
 }
+
 func TestRotateFileLevels(t *testing.T) {
 	hook := &RotateFile{
 		Config: RotateFileConfig{

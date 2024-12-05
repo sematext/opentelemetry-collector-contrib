@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-
 	"sync"
 	"time"
 
@@ -51,7 +50,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("could not detect hostname: %w", err)
-
 	}
 
 	return &sematextHTTPWriter{
@@ -261,7 +259,7 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 	return
 }
 
-//Logs Support
+// Logs Support
 
 // FlatWriter writes a raw message to log file.
 type FlatWriter struct {
@@ -336,7 +334,6 @@ type RotateFile struct {
 
 // NewRotateFile builds a new rotate file hook.
 func NewRotateFile(config RotateFileConfig) (logrus.Hook, error) {
-
 	hook := RotateFile{
 		Config: config,
 	}

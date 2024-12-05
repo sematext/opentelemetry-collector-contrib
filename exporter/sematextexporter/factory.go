@@ -35,7 +35,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-
 	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
