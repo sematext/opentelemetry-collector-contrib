@@ -41,7 +41,7 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 }
 
 // pushLogsData processes and sends log data to Sematext in bulk.
-func (e *sematextLogsExporter) pushLogsData(ctx context.Context, logs plog.Logs) error {
+func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) error {
 	// Convert logs to bulk payload
 	bulkPayload, err := convertLogsToBulkPayload(logs, e.config.LogsConfig.AppToken)
 	if err != nil {
@@ -100,7 +100,7 @@ func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]int
 }
 
 // Start initializes the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Start(ctx context.Context, host component.Host) error {
+func (e *sematextLogsExporter) Start(_ context.Context, host component.Host) error {
 	if e.client == nil {
 		return fmt.Errorf("sematext client is not initialized")
 	}
@@ -109,7 +109,7 @@ func (e *sematextLogsExporter) Start(ctx context.Context, host component.Host) e
 }
 
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Shutdown(ctx context.Context) error {
+func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
 	e.logger.Info("Shutting down Sematext Logs Exporter...")
 	return nil
 }
