@@ -43,7 +43,7 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 // pushLogsData processes and sends log data to Sematext in bulk.
 func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) error {
 	// Convert logs to bulk payload
-	bulkPayload, err := convertLogsToBulkPayload(logs, e.config.LogsConfig.AppToken)
+	bulkPayload, err := convertLogsToBulkPayload(logs)
 	if err != nil {
 		e.logger.Errorf("Failed to convert logs: %v", err)
 		return err
@@ -64,7 +64,7 @@ func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) e
 }
 
 // convertLogsToBulkPayload converts OpenTelemetry log data into a bulk payload for Sematext.
-func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]interface{}, error) {
+func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) {
 	var bulkPayload []map[string]interface{}
 
 	resourceLogs := logs.ResourceLogs()
@@ -76,14 +76,6 @@ func convertLogsToBulkPayload(logs plog.Logs, appToken string) ([]map[string]int
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				record := logRecords.At(k)
-
-				// Add metadata for indexing
-				meta := map[string]interface{}{
-					"index": map[string]interface{}{
-						"_index": appToken,
-					},
-				}
-				bulkPayload = append(bulkPayload, meta)
 
 				// Build the log entry
 				logEntry := map[string]interface{}{
@@ -111,8 +103,8 @@ func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error 
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
 	if e.logger == nil {
-        return fmt.Errorf("logger is not initialized")
-    }
+		return fmt.Errorf("logger is not initialized")
+	}
 	e.logger.Info("Shutting down Sematext Logs Exporter...")
 	return nil
 }

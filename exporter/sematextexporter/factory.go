@@ -8,6 +8,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
@@ -55,6 +56,7 @@ func createDefaultConfig() component.Config {
 			LogMaxAge:     2,
 			LogMaxSize:    10,
 			LogMaxBackups: 10,
+			WriteEvents:   atomic.Bool{},
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Region:        "custom",
@@ -120,9 +122,7 @@ func createLogsExporter(
 		set,
 		cfg,
 		exporter.pushLogsData, // Function to process and send logs
-		exporterhelper.WithQueue(cf.MetricsConfig.QueueSettings),
 		exporterhelper.WithRetry(cf.BackOffConfig),
 		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }
