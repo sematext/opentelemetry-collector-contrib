@@ -12,16 +12,18 @@ import (
 	"net/url"
 	"os"
 	"sort"
-
 	"sync"
 	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
+	fs "github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var _ otel2influx.InfluxWriter = (*sematextHTTPWriter)(nil)
@@ -48,7 +50,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("could not detect hostname: %w", err)
-
 	}
 
 	return &sematextHTTPWriter{
@@ -60,13 +61,13 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 				return e
 			},
 		},
-		telemetrySettings:  telemetrySettings,
-		writeURL:           writeURL,
-		payloadMaxLines:    config.PayloadMaxLines,
-		payloadMaxBytes:    config.PayloadMaxBytes,
-		logger:             logger,
-		hostname:           hostname,
-		token:              config.AppToken,
+		telemetrySettings: telemetrySettings,
+		writeURL:          writeURL,
+		payloadMaxLines:   config.PayloadMaxLines,
+		payloadMaxBytes:   config.PayloadMaxBytes,
+		logger:            logger,
+		hostname:          hostname,
+		token:             config.MetricsConfig.AppToken,
 	}, nil
 }
 
@@ -191,13 +192,13 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	}
 
 	switch res.StatusCode {
-		case 200, 204:
-			break
-		case 500:
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default:
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	case 200, 204:
+		break
+	case 500:
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default:
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
+	}
 
 	return nil
 }
@@ -256,4 +257,111 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 		}
 	}
 	return
+}
+
+// Logs Support
+
+// FlatWriter writes a raw message to log file.
+type FlatWriter struct {
+	l *logrus.Logger
+}
+
+// NewFlatWriter creates a new instance of flat writer.
+func newFlatWriter(f string, c *Config) (*FlatWriter, error) {
+	l := logrus.New()
+	l.Out = io.Discard
+
+	hook, err := initRotate(
+		f,
+		c.LogMaxAge,
+		c.LogMaxBackups,
+		c.LogMaxSize,
+		&FlatFormatter{},
+	)
+	w := &FlatWriter{
+		l: l,
+	}
+	if err != nil {
+		return w, err
+	}
+	l.AddHook(hook)
+	return w, nil
+}
+
+// Write dumps a raw message to log file.
+func (w *FlatWriter) Write(message string) {
+	w.l.Print(message)
+}
+
+// InitRotate returns a new fs hook that enables log file rotation with specified pattern,
+// maximum size/TTL for existing log files.
+func initRotate(filePath string, maxAge, maxBackups, maxSize int, f logrus.Formatter) (logrus.Hook, error) {
+	h, err := newRotateFile(RotateFileConfig{
+		Filename:   filePath,
+		MaxAge:     maxAge,
+		MaxBackups: maxBackups,
+		MaxSize:    maxSize,
+		Level:      logrus.DebugLevel,
+		Formatter:  f,
+	})
+	if err != nil {
+		// if we can't initialize file log rotation, configure logger
+		// without rotation capabilities
+		var pathMap fs.PathMap = make(map[logrus.Level]string, 0)
+		for _, ll := range logrus.AllLevels {
+			pathMap[ll] = filePath
+		}
+		return fs.NewHook(pathMap, f), fmt.Errorf("unable to initialize log rotate: %w", err)
+	}
+	return h, nil
+}
+
+// RotateFileConfig is the configuration for the rotate file hook.
+type RotateFileConfig struct {
+	Filename   string
+	MaxSize    int
+	MaxBackups int
+	MaxAge     int
+	Level      logrus.Level
+	Formatter  logrus.Formatter
+}
+
+// RotateFile represents the rotate file hook.
+type RotateFile struct {
+	Config    RotateFileConfig
+	logWriter io.Writer
+}
+
+// NewRotateFile builds a new rotate file hook.
+func newRotateFile(config RotateFileConfig) (logrus.Hook, error) {
+	if config.Filename == "" {
+		return nil, fmt.Errorf("filename is required")
+	}
+	hook := RotateFile{
+		Config: config,
+	}
+	hook.logWriter = &lumberjack.Logger{
+		Filename:   config.Filename,
+		MaxSize:    config.MaxSize,
+		MaxBackups: config.MaxBackups,
+		MaxAge:     config.MaxAge,
+	}
+	return &hook, nil
+}
+
+// Fire is called by logrus when it is about to write the log entry.
+func (hook *RotateFile) Fire(entry *logrus.Entry) error {
+	b, err := hook.Config.Formatter.Format(entry)
+	if err != nil {
+		return err
+	}
+	if _, err := hook.logWriter.Write(b); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Levels determines log levels that for which the logs are written.
+func (hook *RotateFile) Levels() []logrus.Level {
+	return logrus.AllLevels[:hook.Config.Level+1]
 }
