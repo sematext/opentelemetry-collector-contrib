@@ -60,7 +60,7 @@ type LogsConfig struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us"{
+	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
 	if len(cfg.MetricsConfig.AppToken) != 36 {
