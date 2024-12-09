@@ -48,6 +48,7 @@ components:
         - pulsar
         - rabbitmq
         - sapm
+        - sematext
         - sentry
         - signalfx
         - splunk_hec
