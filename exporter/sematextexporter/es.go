@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/olivere/elastic"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-
-	json "github.com/json-iterator/go"
 )
 
 // artificialDocType designates a syntenic doc type for ES documents
@@ -33,7 +32,7 @@ type client struct {
 
 // Client represents a minimal interface client implementation has to satisfy.
 type Client interface {
-	Bulk(body interface{}, config *Config) error
+	Bulk(body any, config *Config) error
 }
 
 // NewClient creates a new instance of ES client that internally stores a reference
@@ -62,14 +61,14 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 }
 
 // Bulk processes a batch of documents and sends them to the specified LogsEndpoint.
-func (c *client) Bulk(body interface{}, config *Config) error {
+func (c *client) Bulk(body any, config *Config) error {
 	if grp, ok := c.clients[config.LogsEndpoint]; ok {
 		bulkRequest := grp.client.Bulk()
 		if reflect.TypeOf(body).Kind() == reflect.Slice {
 			v := reflect.ValueOf(body)
 			for i := 0; i < v.Len(); i++ {
 				doc := v.Index(i).Interface()
-				if docMap, ok := doc.(map[string]interface{}); ok {
+				if docMap, ok := doc.(map[string]any); ok {
 					docMap["os.host"] = getHostname()
 				}
 

@@ -64,8 +64,8 @@ func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) e
 }
 
 // convertLogsToBulkPayload converts OpenTelemetry log data into a bulk payload for Sematext.
-func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) {
-	var bulkPayload []map[string]interface{}
+func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]any, error) {
+	var bulkPayload []map[string]any
 
 	resourceLogs := logs.ResourceLogs()
 
@@ -82,7 +82,7 @@ func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) 
 					severity = "INFO" // Default severity if missing
 				}
 				// Build the log entry
-				logEntry := map[string]interface{}{
+				logEntry := map[string]any{
 					"@timestamp": record.Timestamp().AsTime().Format(time.RFC3339),
 					"message":    record.Body().AsString(),
 					"severity":   severity,
