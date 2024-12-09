@@ -44,6 +44,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		MetricsConfig: MetricsConfig{
+			MetricsEndpoint: "https://spm-receiver.sematext.com" ,
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			AppToken:        appToken,
 			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
@@ -51,6 +52,7 @@ func createDefaultConfig() component.Config {
 			PayloadMaxBytes: 300_000,
 		},
 		LogsConfig: LogsConfig{
+			LogsEndpoint: "https://logsene-receiver.sematext.com",
 			AppToken:      appToken,
 			LogRequests:   true,
 			LogMaxAge:     2,
@@ -59,7 +61,7 @@ func createDefaultConfig() component.Config {
 			WriteEvents:   atomic.Bool{},
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		Region:        "custom",
+		Region:        "us",
 	}
 	cfg.LogsConfig.WriteEvents.Store(false)
 	return cfg
@@ -102,6 +104,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.MetricsConfig.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(writer.Start),
+		exporterhelper.WithShutdown(writer.Shutdown),
 	)
 }
 
@@ -124,5 +127,6 @@ func createLogsExporter(
 		exporter.pushLogsData, // Function to process and send logs
 		exporterhelper.WithRetry(cf.BackOffConfig),
 		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }

@@ -76,7 +76,11 @@ func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) 
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				record := logRecords.At(k)
-
+			 // Extract severity and provide a default value if empty
+			 severity := record.SeverityText()
+			 if severity == "" {
+				 severity = "INFO" // Default severity if missing
+			 } 
 				// Build the log entry
 				logEntry := map[string]interface{}{
 					"@timestamp": record.Timestamp().AsTime().Format(time.RFC3339),
@@ -90,21 +94,50 @@ func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) 
 
 	return bulkPayload, nil
 }
-
 // Start initializes the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error {
-	if e.client == nil {
-		return fmt.Errorf("sematext client is not initialized")
-	}
-	e.logger.Info("Starting Sematext Logs Exporter...")
-	return nil
-}
+    // Create a new logger with a FlatFormatter
+    logger := logrus.New()
+    logger.SetFormatter(&FlatFormatter{})
 
+    // Initialize the Sematext client
+    client, err := newClient(e.config, logger, FlatWriter{})
+    if err != nil {
+        e.logger.Errorf("Failed to initialize Sematext client: %v", err)
+        return fmt.Errorf("failed to initialize Sematext client: %w", err)
+    }
+    if client == nil {
+        e.logger.Error("Sematext client is not initialized (nil)")
+        return fmt.Errorf("sematext client is not initialized")
+    }
+
+    // Assign the client and logger to the exporter
+    e.client = client
+    e.logger = logger
+
+    // Log a success message
+    e.logger.Info("Sematext Logs Exporter successfully started")
+    return nil
+}
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
-	if e.logger == nil {
-		return fmt.Errorf("logger is not initialized")
-	}
-	e.logger.Info("Shutting down Sematext Logs Exporter...")
-	return nil
+func (e *sematextLogsExporter) Shutdown(ctx context.Context) error {
+    if e.logger == nil {
+        return fmt.Errorf("logger is not initialized")
+    }
+
+    e.logger.Info("Shutting down Sematext Logs Exporter...")
+
+    // Stop ElasticSearch client's background goroutines
+    if e.client != nil {
+        for endpoint, grp := range e.client.(*client).clients {
+            if grp.client != nil {
+                e.logger.Debugf("Stopping ElasticSearch client for endpoint: %s", endpoint)
+                grp.client.Stop() // Stop the ElasticSearch client's healthchecker goroutines
+            }
+        }
+    }
+
+    // Log completion of shutdown
+    e.logger.Info("Sematext Logs Exporter shutdown complete")
+    return nil
 }
