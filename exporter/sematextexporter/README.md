@@ -24,7 +24,7 @@ The following configuration options are supported:
 * `payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
 * `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
-* `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
+* `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/readme.md#configuration)
     * `enabled` (default = true)
     * `num_consumers` (default = 10) The number of consumers from the queue
     * `queue_size` (default = 1000) Maximum number of batches allowed in queue at a given time
