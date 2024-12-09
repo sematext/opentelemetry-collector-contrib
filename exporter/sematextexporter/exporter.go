@@ -85,7 +85,7 @@ func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]interface{}, error) 
 				logEntry := map[string]interface{}{
 					"@timestamp": record.Timestamp().AsTime().Format(time.RFC3339),
 					"message":    record.Body().AsString(),
-					"severity":   record.SeverityText(),
+					"severity":   severity,
 				}
 				bulkPayload = append(bulkPayload, logEntry)
 			}
@@ -120,7 +120,7 @@ func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error 
     return nil
 }
 // Shutdown gracefully shuts down the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Shutdown(ctx context.Context) error {
+func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
     if e.logger == nil {
         return fmt.Errorf("logger is not initialized")
     }
