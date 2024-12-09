@@ -43,11 +43,7 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 // pushLogsData processes and sends log data to Sematext in bulk.
 func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) error {
 	// Convert logs to bulk payload
-	bulkPayload, err := convertLogsToBulkPayload(logs)
-	if err != nil {
-		e.logger.Errorf("Failed to convert logs: %v", err)
-		return err
-	}
+	bulkPayload := convertLogsToBulkPayload(logs)
 
 	// Debug: Print the bulk payload
 	for _, payload := range bulkPayload {
@@ -64,7 +60,7 @@ func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) e
 }
 
 // convertLogsToBulkPayload converts OpenTelemetry log data into a bulk payload for Sematext.
-func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]any, error) {
+func convertLogsToBulkPayload(logs plog.Logs) []map[string]any {
 	var bulkPayload []map[string]any
 
 	resourceLogs := logs.ResourceLogs()
@@ -92,7 +88,7 @@ func convertLogsToBulkPayload(logs plog.Logs) ([]map[string]any, error) {
 		}
 	}
 
-	return bulkPayload, nil
+	return bulkPayload
 }
 
 // Start initializes the Sematext Logs Exporter.
