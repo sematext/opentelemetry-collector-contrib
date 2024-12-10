@@ -109,7 +109,7 @@ type MockClient struct {
 	Error   error
 }
 
-func (m *MockClient) Bulk(body any, config *Config) error {
+func (m *MockClient) Bulk(_ any, config *Config) error {
 	for _, group := range m.clients {
 		group.client.Bulk()
 	}
