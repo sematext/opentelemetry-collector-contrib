@@ -1,6 +1,10 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sematextexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -13,6 +17,7 @@ import (
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -147,7 +152,6 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-
 		if assert.Nil(t, recordedRequest) {
 			var err error
 			recordedRequest = r
@@ -164,10 +168,10 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		new(common.NoopLogger),
 		&Config{
 			MetricsConfig: MetricsConfig{
-				MetricsEndpoint:noopHTTPServer.URL ,
-				AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				MetricsEndpoint: noopHTTPServer.URL,
+				AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			},
-			Region:    "US",
+			Region: "US",
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -178,9 +182,9 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		context.Background(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
-		map[string]any{"f": int64(1)},        
-		nowTime,                               
-		common.InfluxMetricValueTypeUntyped) 
+		map[string]any{"f": int64(1)},
+		nowTime,
+		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
 
 	err = sematextWriterBatch.WriteBatch(context.Background())
@@ -188,7 +192,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {
-		expected:= fmt.Sprintf("m,k=v,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
+		expected := fmt.Sprintf("m,k=v,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
@@ -199,7 +203,7 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "us",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
 		}
 		_, err := composeWriteURL(cfg)
@@ -211,11 +215,93 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "eu",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
-
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
 	})
+}
+
+func TestNewFlatWriter(t *testing.T) {
+	config := &Config{
+		LogsConfig: LogsConfig{
+			LogMaxAge:     7,
+			LogMaxBackups: 5,
+			LogMaxSize:    10,
+		},
+	}
+	writer, err := newFlatWriter("test.log", config)
+	assert.NoError(t, err)
+	assert.NotNil(t, writer)
+	assert.NotNil(t, writer.l)
+}
+
+func TestFlatWriterWrite(t *testing.T) {
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	writer := &FlatWriter{l: logger}
+
+	message := "test message"
+	writer.Write(message)
+
+	assert.Contains(t, buf.String(), message)
+}
+
+func TestInitRotate(t *testing.T) {
+	hook, err := initRotate("test.log", 7, 5, 10, &FlatFormatter{})
+	assert.NoError(t, err)
+	assert.NotNil(t, hook)
+}
+
+func TestNewRotateFile(t *testing.T) {
+	config := RotateFileConfig{
+		Filename:   "test.log",
+		MaxSize:    10,
+		MaxBackups: 5,
+		MaxAge:     7,
+		Level:      logrus.InfoLevel,
+		Formatter:  &FlatFormatter{},
+	}
+
+	hook, err := newRotateFile(config)
+	assert.NoError(t, err)
+	assert.NotNil(t, hook)
+}
+
+func TestRotateFileFire(t *testing.T) {
+	var buf bytes.Buffer
+
+	hook := &RotateFile{
+		Config: RotateFileConfig{
+			Filename:   "test.log",
+			MaxSize:    10,
+			MaxBackups: 5,
+			MaxAge:     7,
+			Level:      logrus.InfoLevel,
+			Formatter:  &logrus.TextFormatter{},
+		},
+		logWriter: &buf,
+	}
+
+	entry := &logrus.Entry{
+		Message: "test entry",
+		Level:   logrus.InfoLevel,
+	}
+
+	err := hook.Fire(entry)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "test entry")
+}
+
+func TestRotateFileLevels(t *testing.T) {
+	hook := &RotateFile{
+		Config: RotateFileConfig{
+			Level: logrus.WarnLevel,
+		},
+	}
+
+	expectedLevels := logrus.AllLevels[:logrus.WarnLevel+1]
+	assert.Equal(t, expectedLevels, hook.Levels())
 }
