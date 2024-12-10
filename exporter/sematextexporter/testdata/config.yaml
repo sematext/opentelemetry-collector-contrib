@@ -15,6 +15,13 @@ sematext/override-config:
       queue_size: 10
     payload_max_lines: 72
     payload_max_bytes: 27
+  logs:
+    app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    logs_requests: true
+    logs_max_age : 2
+    logs_max_backups: 10
+    logs_max_size: 10
+
 
 
 
