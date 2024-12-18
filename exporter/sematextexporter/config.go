@@ -18,8 +18,8 @@ const (
 	usRegion          = "us"
 	euMetricsEndpoint = "https://spm-receiver.eu.sematext.com"
 	euLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
-	usMetricsEndpoint = "https://spm-receiver.eu.sematext.com"
-	usLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
+	usMetricsEndpoint = "https://spm-receiver.sematext.com"
+	usLogsEndpoint    = "https://logsene-receiver.sematext.com"
 )
 
 type Config struct {
