@@ -22,7 +22,7 @@ func TestConvertLogsToBulkPayload(t *testing.T) {
 	logRecord := scopeLogs.LogRecords().AppendEmpty()
 
 	// Set log record fields
-	timestamp := time.Now().UTC() 
+	timestamp := time.Now().UTC()
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	logRecord.Body().SetStr("This is a test log message")
 	logRecord.SetSeverityText("ERROR")
