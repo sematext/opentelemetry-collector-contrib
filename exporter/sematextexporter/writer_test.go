@@ -131,6 +131,7 @@ func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
 					logger:          common.NoopLogger{},
 				},
 			}
+			defer batch.sematextHTTPWriter.httpClient.CloseIdleConnections()
 
 			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)
@@ -177,6 +178,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	require.NoError(t, err)
 	sematextWriter.httpClient = noopHTTPServer.Client()
 	sematextWriterBatch := sematextWriter.NewBatch()
+	defer sematextWriter.httpClient.CloseIdleConnections()
 
 	err = sematextWriterBatch.EnqueuePoint(
 		context.Background(),

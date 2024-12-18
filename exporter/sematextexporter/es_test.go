@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/olivere/elastic"
+	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,6 +35,11 @@ func TestBulkWithMockClient(t *testing.T) {
 
 	// Create a mock client
 	mockClient := newMockClient(mockConfig)
+	defer func() {
+		for _, group := range mockClient.clients {
+			group.client.Stop()
+		}
+	}()
 
 	// Create mock payload
 	mockPayload := []map[string]any{
@@ -92,8 +97,12 @@ func TestGetHostname(t *testing.T) {
 
 type mockElasticClient struct {
 	BulkCalled bool
+	done       chan struct{}
 }
 
+func (m *mockElasticClient) Stop() {
+	close(m.done)
+}
 func (m *mockElasticClient) Bulk() *elastic.BulkService {
 	m.BulkCalled = true
 	return nil
@@ -117,7 +126,9 @@ func (m *MockClient) Bulk(_ any, _ *Config) error {
 }
 
 func newMockClient(config *Config) *MockClient {
-	mockElastic := &mockElasticClient{}
+	mockElastic := &mockElasticClient{
+		done: make(chan struct{}),
+	}
 	return &MockClient{
 		clients: map[string]mockGroup{
 			config.LogsEndpoint: {

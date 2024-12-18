@@ -13,6 +13,15 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+const (
+	euRegion          = "eu"
+	usRegion          = "us"
+	euMetricsEndpoint = "https://spm-receiver.eu.sematext.com"
+	euLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
+	usMetricsEndpoint = "https://spm-receiver.eu.sematext.com"
+	usLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
+)
+
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -60,7 +69,7 @@ type LogsConfig struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" {
+	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
 	if len(cfg.MetricsConfig.AppToken) != 36 {
@@ -69,26 +78,14 @@ func (cfg *Config) Validate() error {
 	if len(cfg.LogsConfig.AppToken) != 36 {
 		return fmt.Errorf("invalid logs app_token: %s. app_token should be 36 characters", cfg.LogsConfig.AppToken)
 	}
-	if strings.ToLower(cfg.Region) == "eu" {
-		cfg.MetricsEndpoint = "https://spm-receiver.eu.sematext.com"
-		cfg.LogsEndpoint = "https://logsene-receiver.eu.sematext.com"
+	if strings.ToLower(cfg.Region) == euRegion {
+		cfg.MetricsEndpoint = euMetricsEndpoint
+		cfg.LogsEndpoint = euLogsEndpoint
 	}
-	if strings.ToLower(cfg.Region) == "us" {
-		cfg.MetricsEndpoint = "https://spm-receiver.sematext.com"
-		cfg.LogsEndpoint = "https://logsene-receiver.sematext.com"
+	if strings.ToLower(cfg.Region) == usRegion {
+		cfg.MetricsEndpoint = usMetricsEndpoint
+		cfg.LogsEndpoint = usLogsEndpoint
 	}
 
 	return nil
 }
-
-// Bool provides an atomic boolean type.
-type Bool struct{ u Uint32 }
-
-// Uint32 provides an atomic uint32 type.
-type Uint32 struct{ value uint32 }
-
-// Load gets the value of atomic boolean.
-func (b *Bool) Load() bool { return b.u.Load() == 1 }
-
-// Load get the value of atomic integer.
-func (u *Uint32) Load() uint32 { return atomic.LoadUint32(&u.value) }

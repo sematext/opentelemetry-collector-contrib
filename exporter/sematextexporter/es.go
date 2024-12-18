@@ -10,7 +10,7 @@ import (
 	"time"
 
 	json "github.com/json-iterator/go"
-	"github.com/olivere/elastic"
+	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -24,10 +24,11 @@ type group struct {
 }
 
 type client struct {
-	clients map[string]group
-	config  *Config
-	logger  *logrus.Logger
-	writer  FlatWriter
+	clients  map[string]group
+	config   *Config
+	logger   *logrus.Logger
+	writer   FlatWriter
+	hostname string
 }
 
 // Client represents a minimal interface client implementation has to satisfy.
@@ -46,17 +47,20 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 		if err != nil {
 			return nil, err
 		}
+		defer c.Stop()
 		clients[config.LogsEndpoint] = group{
 			client: c,
 			token:  config.LogsConfig.AppToken,
 		}
 	}
+	hostname := getHostname()
 
 	return &client{
-		clients: clients,
-		config:  config,
-		logger:  logger,
-		writer:  writer,
+		clients:  clients,
+		config:   config,
+		logger:   logger,
+		writer:   writer,
+		hostname: hostname,
 	}, nil
 }
 
@@ -69,7 +73,7 @@ func (c *client) Bulk(body any, config *Config) error {
 			for i := 0; i < v.Len(); i++ {
 				doc := v.Index(i).Interface()
 				if docMap, ok := doc.(map[string]any); ok {
-					docMap["os.host"] = getHostname()
+					docMap["os.host"] = c.hostname
 				}
 
 				req := elastic.NewBulkIndexRequest().
