@@ -90,11 +90,6 @@ func TestFormatl(t *testing.T) {
 	assert.Equal(t, expected, formatted, "Formatted payload should match the expected output")
 }
 
-func TestGetHostname(t *testing.T) {
-	hostname := getHostname()
-	assert.NotEmpty(t, hostname, "Hostname should not be empty")
-}
-
 type mockElasticClient struct {
 	BulkCalled bool
 	done       chan struct{}

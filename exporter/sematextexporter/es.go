@@ -53,7 +53,10 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 			token:  config.LogsConfig.AppToken,
 		}
 	}
-	hostname := getHostname()
+	hostname, err := os.Hostname()
+	if err != nil{
+		fmt.Printf("Could not retrieve hostname: %v\n", err)
+		}
 
 	return &client{
 		clients:  clients,
@@ -136,13 +139,4 @@ func formatl(payload string, status string) string {
 		s = fmt.Sprintf("%s...", s[:i])
 	}
 	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
-}
-
-// getHostname retrieves the current machine's hostname.
-func getHostname() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "None"
-	}
-	return hostname
 }
