@@ -8,18 +8,20 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"bytes"
+	"log"
 
 	json "github.com/json-iterator/go"
-	"github.com/olivere/elastic/v7"
+	"github.com/elastic/go-elasticsearch"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 // artificialDocType designates a syntenic doc type for ES documents
-const artificialDocType = "_doc"
 
 type group struct {
-	client *elastic.Client
+	client *elasticsearch.Client
 	token  string
 }
 
@@ -43,11 +45,12 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 
 	// client for shipping to logsene
 	if config.LogsConfig.AppToken != "" {
-		c, err := elastic.NewClient(elastic.SetURL(config.LogsEndpoint), elastic.SetSniff(false), elastic.SetHealthcheckTimeout(time.Second*2))
+		c, err := elasticsearch.NewClient(elasticsearch.Config{
+			Addresses: []string{config.LogsEndpoint},
+		})
 		if err != nil {
 			return nil, err
 		}
-		defer c.Stop()
 		clients[config.LogsEndpoint] = group{
 			client: c,
 			token:  config.LogsConfig.AppToken,
@@ -69,57 +72,58 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 
 // Bulk processes a batch of documents and sends them to the specified LogsEndpoint.
 func (c *client) Bulk(body any, config *Config) error {
-	if grp, ok := c.clients[config.LogsEndpoint]; ok {
-		bulkRequest := grp.client.Bulk()
-		if reflect.TypeOf(body).Kind() == reflect.Slice {
-			v := reflect.ValueOf(body)
-			for i := 0; i < v.Len(); i++ {
-				doc := v.Index(i).Interface()
-				if docMap, ok := doc.(map[string]any); ok {
-					docMap["os.host"] = c.hostname
-				}
+	grp, ok := c.clients[config.LogsEndpoint]
+	if !ok {
+		return fmt.Errorf("no client known for %s endpoint", config.LogsEndpoint)
+	}
 
-				req := elastic.NewBulkIndexRequest().
-					Index(grp.token).
-					Type(artificialDocType).
-					Doc(doc)
-				bulkRequest.Add(req)
-			}
-		}
+	var bulkBuffer bytes.Buffer
 
-		if bulkRequest.NumberOfActions() > 0 {
-			payloadBytes, err := json.Marshal(body)
-			if err != nil {
-				return fmt.Errorf("failed to serialize payload: %w", err)
+	if reflect.TypeOf(body).Kind() == reflect.Slice {
+		v := reflect.ValueOf(body)
+		for i := 0; i < v.Len(); i++ {
+			doc := v.Index(i).Interface()
+			if docMap, ok := doc.(map[string]any); ok {
+				docMap["os.host"] = c.hostname
 			}
 
-			// Print or log the payload(Will delete this once everything is good)
-			fmt.Printf("Payload being sent to Sematext:\n%s\n", string(payloadBytes))
-
-			if c.config.LogRequests {
-				c.logger.Infof("Sending bulk to %s", config.LogsEndpoint)
+			meta := map[string]map[string]string{
+				"index": {"_index": grp.token},
 			}
+			metaBytes, _ := json.Marshal(meta)
+			docBytes, _ := json.Marshal(doc)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			defer cancel()
-			res, err := bulkRequest.Do(ctx)
-			if err != nil {
-				c.writePayload(string(payloadBytes), err.Error())
-				return err
-			}
-			if res.Errors {
-				for _, item := range res.Failed() {
-					if item.Error != nil {
-						c.logger.Errorf("Document %s failed to index: %s - %s", item.Id, item.Error.Type, item.Error.Reason)
-					}
-				}
-			}
-
-			c.writePayload(string(payloadBytes), "200")
-			return nil
+			bulkBuffer.Write(metaBytes)
+			bulkBuffer.WriteByte('\n')
+			bulkBuffer.Write(docBytes)
+			bulkBuffer.WriteByte('\n')
 		}
 	}
-	return fmt.Errorf("no client known for %s endpoint", config.LogsEndpoint)
+
+	if bulkBuffer.Len() > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		req := esapi.BulkRequest{
+			Body: bytes.NewReader(bulkBuffer.Bytes()),
+		}
+
+		res, err := req.Do(ctx, grp.client)
+		if err != nil {
+			log.Printf("Bulk request failed: %v", err)
+			return err
+		}
+		defer res.Body.Close()
+
+		if res.IsError() {
+			log.Printf("Bulk request returned error: %s", res.String())
+			return fmt.Errorf("bulk request error: %s", res.String())
+		}
+
+		log.Printf("Bulk request successful: %s", res.String())
+	}
+
+	return nil
 }
 
 // writePayload writes a formatted payload along with its status to the configured writer.

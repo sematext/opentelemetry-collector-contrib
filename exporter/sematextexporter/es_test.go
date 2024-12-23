@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -98,7 +98,7 @@ type mockElasticClient struct {
 func (m *mockElasticClient) Stop() {
 	close(m.done)
 }
-func (m *mockElasticClient) Bulk() *elastic.BulkService {
+func (m *mockElasticClient) Bulk() *esapi.Bulk {
 	m.BulkCalled = true
 	return nil
 }

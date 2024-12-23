@@ -127,6 +127,5 @@ func createLogsExporter(
 		exporter.pushLogsData, // Function to process and send logs
 		exporterhelper.WithRetry(cf.BackOffConfig),
 		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }

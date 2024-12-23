@@ -107,35 +107,9 @@ func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error 
 		e.logger.Error("Sematext client is not initialized (nil)")
 		return fmt.Errorf("sematext client is not initialized")
 	}
-
-	// Assign the client and logger to the exporter
 	e.client = client
 	e.logger = logger
 
-	// Log a success message
 	e.logger.Info("Sematext Logs Exporter successfully started")
-	return nil
-}
-
-// Shutdown gracefully shuts down the Sematext Logs Exporter.
-func (e *sematextLogsExporter) Shutdown(_ context.Context) error {
-	if e.logger == nil {
-		return fmt.Errorf("logger is not initialized")
-	}
-
-	e.logger.Info("Shutting down Sematext Logs Exporter...")
-
-	// Stop ElasticSearch client's background goroutines
-	if e.client != nil {
-		for endpoint, grp := range e.client.(*client).clients {
-			if grp.client != nil {
-				e.logger.Debugf("Stopping ElasticSearch client for endpoint: %s", endpoint)
-				grp.client.Stop() // Stop the ElasticSearch client's healthchecker goroutines
-			}
-		}
-	}
-
-	// Log completion of shutdown
-	e.logger.Info("Sematext Logs Exporter shutdown complete")
 	return nil
 }

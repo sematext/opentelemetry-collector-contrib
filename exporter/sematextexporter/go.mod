@@ -3,8 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/semate
 go 1.22.0
 
 require (
+	github.com/elastic/go-elasticsearch v0.0.0
+	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/influxdata/influxdb-observability/common v0.5.8
-	github.com/olivere/elastic/v7 v7.0.32
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	go.opentelemetry.io/collector/config/confighttp v0.110.0
 	go.opentelemetry.io/collector/config/configopaque v1.16.0
@@ -15,15 +16,13 @@ require (
 )
 
 require (
+	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	go.opentelemetry.io/collector/component/componentprofiles v0.110.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.110.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.110.0 // indirect
