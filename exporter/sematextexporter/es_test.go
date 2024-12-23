@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"go.uber.org/zap"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewClient(t *testing.T) {
