@@ -3,11 +3,10 @@
 
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 import (
-	"io"
 	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +14,7 @@ func TestNewClient(t *testing.T) {
 	mockConfig := &Config{
 		Region: "US",
 	}
-	mockLogger := logrus.New()
-	mockLogger.SetOutput(io.Discard)
+	mockLogger := zap.NewNop()
 
 	writer := FlatWriter{}
 	client, err := newClient(mockConfig, mockLogger, writer)
@@ -62,8 +60,7 @@ func TestWritePayload(t *testing.T) {
 			AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		},
 	}
-	mockLogger := logrus.New()
-	mockLogger.SetOutput(io.Discard)
+	mockLogger := zap.NewNop()
 
 	mockWriter := FlatWriter{}
 	client := &client{

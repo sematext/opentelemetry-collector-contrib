@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
+
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"time"
-	"bytes"
-	"log"
 
-	json "github.com/json-iterator/go"
 	"github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
+	"go.uber.org/zap"
 )
 
-// artificialDocType designates a syntenic doc type for ES documents
+// artificialDocType designates a synthetic doc type for ES documents
 
 type group struct {
 	client *elasticsearch.Client
@@ -28,7 +28,7 @@ type group struct {
 type client struct {
 	clients  map[string]group
 	config   *Config
-	logger   *logrus.Logger
+	logger   *zap.Logger
 	writer   FlatWriter
 	hostname string
 }
@@ -39,16 +39,17 @@ type Client interface {
 }
 
 // NewClient creates a new instance of ES client that internally stores a reference
-// to both, event and log receivers.
-func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client, error) {
+// to both event and log receivers.
+func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, error) {
 	clients := make(map[string]group)
 
-	// client for shipping to logsene
+	// Client for shipping to logsene
 	if config.LogsConfig.AppToken != "" {
 		c, err := elasticsearch.NewClient(elasticsearch.Config{
 			Addresses: []string{config.LogsEndpoint},
 		})
 		if err != nil {
+			logger.Error("Failed to create Elasticsearch client", zap.Error(err))
 			return nil, err
 		}
 		clients[config.LogsEndpoint] = group{
@@ -56,10 +57,12 @@ func newClient(config *Config, logger *logrus.Logger, writer FlatWriter) (Client
 			token:  config.LogsConfig.AppToken,
 		}
 	}
+
 	hostname, err := os.Hostname()
-	if err != nil{
-		fmt.Printf("Could not retrieve hostname: %v\n", err)
-		}
+	if err != nil {
+		logger.Warn("Could not retrieve hostname", zap.Error(err))
+		hostname = "unknown"
+	}
 
 	return &client{
 		clients:  clients,
@@ -110,17 +113,17 @@ func (c *client) Bulk(body any, config *Config) error {
 
 		res, err := req.Do(ctx, grp.client)
 		if err != nil {
-			log.Printf("Bulk request failed: %v", err)
+			c.logger.Error("Bulk request failed", zap.Error(err))
 			return err
 		}
 		defer res.Body.Close()
 
 		if res.IsError() {
-			log.Printf("Bulk request returned error: %s", res.String())
+			c.logger.Error("Bulk request returned an error", zap.String("response", res.String()))
 			return fmt.Errorf("bulk request error: %s", res.String())
 		}
 
-		log.Printf("Bulk request successful: %s", res.String())
+		c.logger.Info("Bulk request successful", zap.String("response", res.String()))
 	}
 
 	return nil
@@ -131,11 +134,11 @@ func (c *client) writePayload(payload string, status string) {
 	if c.config.WriteEvents.Load() {
 		c.writer.Write(formatl(payload, status))
 	} else {
-		c.logger.Debugf("WriteEvents disabled. Payload: %s, Status: %s", payload, status)
+		c.logger.Debug("WriteEvents disabled", zap.String("payload", payload), zap.String("status", status))
 	}
 }
 
-// Formatl delimits and formats the response returned by receiver.
+// Formatl delimits and formats the response returned by the receiver.
 func formatl(payload string, status string) string {
 	s := strings.TrimLeft(status, "\n")
 	i := strings.Index(s, "\n")

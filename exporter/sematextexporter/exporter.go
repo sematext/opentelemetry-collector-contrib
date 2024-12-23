@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,13 +17,12 @@ import (
 type sematextLogsExporter struct {
 	config *Config
 	client Client
-	logger *logrus.Logger
+	logger *zap.Logger
 }
 
 // newExporter creates a new instance of the sematextLogsExporter.
 func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
-	logger := logrus.New()
-	logger.SetFormatter(&FlatFormatter{})
+	logger := zap.NewNop()
 
 	// Initialize Sematext client
 	client, err := newClient(cfg, logger, FlatWriter{})
@@ -52,7 +50,7 @@ func (e *sematextLogsExporter) pushLogsData(_ context.Context, logs plog.Logs) e
 
 	// Send the bulk payload to Sematext
 	if err := e.client.Bulk(bulkPayload, e.config); err != nil {
-		e.logger.Errorf("Failed to send logs to Sematext: %v", err)
+		e.logger.Error("Failed to send logs to Sematext", zap.Error(err))
 		return err
 	}
 
@@ -94,13 +92,12 @@ func convertLogsToBulkPayload(logs plog.Logs) []map[string]any {
 // Start initializes the Sematext Logs Exporter.
 func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error {
 	// Create a new logger with a FlatFormatter
-	logger := logrus.New()
-	logger.SetFormatter(&FlatFormatter{})
+	logger := zap.NewNop()
 
 	// Initialize the Sematext client
 	client, err := newClient(e.config, logger, FlatWriter{})
 	if err != nil {
-		e.logger.Errorf("Failed to initialize Sematext client: %v", err)
+		e.logger.Error("Failed to initialize Sematext client", zap.Error(err))
 		return fmt.Errorf("failed to initialize Sematext client: %w", err)
 	}
 	if client == nil {

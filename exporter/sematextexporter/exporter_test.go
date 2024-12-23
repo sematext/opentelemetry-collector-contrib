@@ -57,8 +57,4 @@ func TestNewExporter(t *testing.T) {
 	assert.Equal(t, mockConfig, exporter.config, "Exporter config does not match")
 	assert.NotNil(t, exporter.client, "Exporter client should not be nil")
 	assert.NotNil(t, exporter.logger, "Exporter logger should not be nil")
-
-	flatFormatter, ok := exporter.logger.Formatter.(*FlatFormatter)
-	assert.True(t, ok, "Exporter logger should use FlatFormatter")
-	assert.NotNil(t, flatFormatter, "FlatFormatter should be properly initialized")
 }
