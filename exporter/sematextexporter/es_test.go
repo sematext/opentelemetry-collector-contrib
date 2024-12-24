@@ -4,6 +4,8 @@
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 import (
 	"testing"
+	"os"
+	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/stretchr/testify/assert"
@@ -50,6 +52,29 @@ func TestBulkWithMockClient(t *testing.T) {
 	for _, group := range mockClient.clients {
 		assert.True(t, group.client.BulkCalled, "Expected Bulk to be called on the mock client")
 	}
+}
+func TestNewClient_ErrorRetrievingHostname(t *testing.T) {
+	var osHostname = os.Hostname
+	mockConfig := &Config{
+		Region: "US",
+		LogsConfig: LogsConfig{
+			LogsEndpoint: "https://logsene-receiver.sematext.com",
+			AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		},
+	}
+	mockLogger := zap.NewNop()
+	writer := FlatWriter{}
+
+	originalHostname := osHostname
+	osHostname = func() (string, error) {
+		return "", fmt.Errorf("mock error retrieving hostname")
+	}
+	defer func() { osHostname = originalHostname }()
+
+	client, err := newClient(mockConfig, mockLogger, writer)
+
+	assert.NotNil(t, client, "Expected client to be created even with hostname error")
+	assert.NoError(t, err, "Expected no error even with hostname error")
 }
 
 func TestWritePayload(t *testing.T) {

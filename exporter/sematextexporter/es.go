@@ -61,7 +61,6 @@ func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, e
 	hostname, err := os.Hostname()
 	if err != nil {
 		logger.Warn("Could not retrieve hostname", zap.Error(err))
-		hostname = "unknown"
 	}
 
 	return &client{
