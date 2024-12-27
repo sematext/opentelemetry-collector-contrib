@@ -274,6 +274,9 @@ type FlatWriter struct {
 
 // NewFlatWriter creates a new instance of FlatWriter.
 func newFlatWriter(filePath string, c *Config) (*FlatWriter, error) {
+	if filePath == "" {
+        return nil, fmt.Errorf("filePath cannot be empty")
+    }
 	lumberjackLogger := &lumberjack.Logger{
 		Filename:   filePath,
 		MaxSize:    c.LogMaxSize,

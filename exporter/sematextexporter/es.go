@@ -47,7 +47,7 @@ func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, e
 		})
 		if err != nil {
 			logger.Error("Failed to create Elasticsearch client", zap.Error(err))
-			return nil, err
+			return nil, fmt.Errorf("elasticsearch client creation failed: %w", err)
 		}
 		clients[config.LogsEndpoint] = group{
 			client: c,
@@ -125,21 +125,3 @@ func (c *client) Bulk(body any, config *Config) error {
 	return nil
 }
 
-// // writePayload writes a formatted payload along with its status to the configured writer.
-// func (c *client) writePayload(payload string, status string) {
-// 	if c.config.WriteEvents.Load() {
-// 		c.writer.Write(formatl(payload, status))
-// 	} else {
-// 		c.logger.Debug("WriteEvents disabled", zap.String("payload", payload), zap.String("status", status))
-// 	}
-// }
-
-// // Formatl delimits and formats the response returned by the receiver.
-// func formatl(payload string, status string) string {
-// 	s := strings.TrimLeft(status, "\n")
-// 	i := strings.Index(s, "\n")
-// 	if i > 0 {
-// 		s = fmt.Sprintf("%s...", s[:i])
-// 	}
-// 	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
-// }
