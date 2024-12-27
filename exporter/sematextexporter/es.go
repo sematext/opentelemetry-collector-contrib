@@ -46,6 +46,7 @@ func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, e
 			Addresses: []string{config.LogsEndpoint},
 		})
 		if err != nil {
+			writer.Write("Failed to create Elasticsearch client: " + err.Error())
 			logger.Error("Failed to create Elasticsearch client", zap.Error(err))
 			return nil, fmt.Errorf("elasticsearch client creation failed: %w", err)
 		}
