@@ -122,4 +122,3 @@ func (c *client) Bulk(body any, config *Config) error {
 
 	return nil
 }
-

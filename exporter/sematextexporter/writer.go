@@ -261,6 +261,3 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 	}
 	return
 }
-
-// Logs Support
-
