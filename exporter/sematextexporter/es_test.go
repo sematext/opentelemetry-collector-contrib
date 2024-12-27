@@ -3,9 +3,9 @@
 
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 import (
-	"testing"
-	"os"
 	"fmt"
+	"os"
+	"testing"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/stretchr/testify/assert"
@@ -75,41 +75,6 @@ func TestNewClient_ErrorRetrievingHostname(t *testing.T) {
 
 	assert.NotNil(t, client, "Expected client to be created even with hostname error")
 	assert.NoError(t, err, "Expected no error even with hostname error")
-}
-
-func TestWritePayload(t *testing.T) {
-	mockConfig := &Config{
-		Region: "US",
-		LogsConfig: LogsConfig{
-			LogsEndpoint: "https://logsene-receiver.sematext.com",
-			AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-		},
-	}
-	mockLogger := zap.NewNop()
-
-	mockWriter := FlatWriter{}
-	client := &client{
-		config: mockConfig,
-		logger: mockLogger,
-		writer: mockWriter,
-	}
-
-	payload := "mockPayload"
-	status := "200"
-	client.writePayload(payload, status)
-
-	// Validate that the payload and status are written correctly
-	expectedOutput := formatl(payload, status)
-	assert.Equal(t, expectedOutput, formatl(payload, status), "Payload should be formatted and written correctly")
-}
-func TestFormatl(t *testing.T) {
-	payload := "mockPayload"
-	status := "200 OK"
-
-	formatted := formatl(payload, status)
-	expected := "mockPayload 200 OK"
-
-	assert.Equal(t, expected, formatted, "Formatted payload should match the expected output")
 }
 
 type mockElasticClient struct {

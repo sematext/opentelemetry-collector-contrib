@@ -10,15 +10,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"go.uber.org/zap"
 )
-
-// artificialDocType designates a synthetic doc type for ES documents
 
 type group struct {
 	client *elasticsearch.Client
@@ -128,21 +125,21 @@ func (c *client) Bulk(body any, config *Config) error {
 	return nil
 }
 
-// writePayload writes a formatted payload along with its status to the configured writer.
-func (c *client) writePayload(payload string, status string) {
-	if c.config.WriteEvents.Load() {
-		c.writer.Write(formatl(payload, status))
-	} else {
-		c.logger.Debug("WriteEvents disabled", zap.String("payload", payload), zap.String("status", status))
-	}
-}
+// // writePayload writes a formatted payload along with its status to the configured writer.
+// func (c *client) writePayload(payload string, status string) {
+// 	if c.config.WriteEvents.Load() {
+// 		c.writer.Write(formatl(payload, status))
+// 	} else {
+// 		c.logger.Debug("WriteEvents disabled", zap.String("payload", payload), zap.String("status", status))
+// 	}
+// }
 
-// Formatl delimits and formats the response returned by the receiver.
-func formatl(payload string, status string) string {
-	s := strings.TrimLeft(status, "\n")
-	i := strings.Index(s, "\n")
-	if i > 0 {
-		s = fmt.Sprintf("%s...", s[:i])
-	}
-	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
-}
+// // Formatl delimits and formats the response returned by the receiver.
+// func formatl(payload string, status string) string {
+// 	s := strings.TrimLeft(status, "\n")
+// 	i := strings.Index(s, "\n")
+// 	if i > 0 {
+// 		s = fmt.Sprintf("%s...", s[:i])
+// 	}
+// 	return fmt.Sprintf("%s %s", strings.TrimSpace(payload), s)
+// }

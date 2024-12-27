@@ -6,7 +6,6 @@ require (
 	github.com/elastic/go-elasticsearch v0.0.0
 	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/influxdata/influxdb-observability/common v0.5.8
-	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	go.opentelemetry.io/collector/config/confighttp v0.110.0
 	go.opentelemetry.io/collector/config/configopaque v1.16.0
 	go.opentelemetry.io/collector/config/configretry v1.16.0

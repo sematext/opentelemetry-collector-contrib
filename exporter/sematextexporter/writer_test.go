@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -17,10 +18,11 @@ import (
 
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
@@ -226,84 +228,43 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 }
 
 func TestNewFlatWriter(t *testing.T) {
+	// Temporary file for testing
+	filePath := "test_log_file.log"
+	defer os.Remove(filePath) // Clean up after test
+
 	config := &Config{
 		LogsConfig: LogsConfig{
-			LogMaxAge:     7,
-			LogMaxBackups: 5,
-			LogMaxSize:    10,
+			LogMaxSize:    5, // Max size in MB
+			LogMaxBackups: 3,
+			LogMaxAge:     7, // Max age in days
 		},
 	}
-	writer, err := newFlatWriter("test.log", config)
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-	assert.NotNil(t, writer.l)
+
+	flatWriter, err := newFlatWriter(filePath, config)
+	assert.NoError(t, err, "Expected no error creating FlatWriter")
+	assert.NotNil(t, flatWriter, "Expected FlatWriter to be created successfully")
+
+	// Check if the logger is initialized
+	assert.NotNil(t, flatWriter.logger, "Expected logger to be initialized")
+}
+
+func newTestFlatWriter(writer io.Writer) *FlatWriter {
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.AddSync(writer),
+		zap.DebugLevel,
+	))
+	return &FlatWriter{logger: logger}
 }
 
 func TestFlatWriterWrite(t *testing.T) {
-	var buf bytes.Buffer
-	logger := logrus.New()
-	logger.SetOutput(&buf)
-	writer := &FlatWriter{l: logger}
+	var buffer bytes.Buffer
+	flatWriter := newTestFlatWriter(&buffer)
 
-	message := "test message"
-	writer.Write(message)
+	// Write a test message
+	testMessage := "This is a test log message."
+	flatWriter.Write(testMessage)
 
-	assert.Contains(t, buf.String(), message)
-}
-
-func TestInitRotate(t *testing.T) {
-	hook, err := initRotate("test.log", 7, 5, 10, &FlatFormatter{})
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
-}
-
-func TestNewRotateFile(t *testing.T) {
-	config := RotateFileConfig{
-		Filename:   "test.log",
-		MaxSize:    10,
-		MaxBackups: 5,
-		MaxAge:     7,
-		Level:      logrus.InfoLevel,
-		Formatter:  &FlatFormatter{},
-	}
-
-	hook, err := newRotateFile(config)
-	assert.NoError(t, err)
-	assert.NotNil(t, hook)
-}
-
-func TestRotateFileFire(t *testing.T) {
-	var buf bytes.Buffer
-
-	hook := &RotateFile{
-		Config: RotateFileConfig{
-			Filename:   "test.log",
-			MaxSize:    10,
-			MaxBackups: 5,
-			MaxAge:     7,
-			Level:      logrus.InfoLevel,
-			Formatter:  &logrus.TextFormatter{},
-		},
-		logWriter: &buf,
-	}
-
-	entry := &logrus.Entry{
-		Message: "test entry",
-		Level:   logrus.InfoLevel,
-	}
-
-	err := hook.Fire(entry)
-	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "test entry")
-}
-
-func TestRotateFileLevels(t *testing.T) {
-	hook := &RotateFile{
-		Config: RotateFileConfig{
-			Level: logrus.WarnLevel,
-		},
-	}
-
-	expectedLevels := logrus.AllLevels[:logrus.WarnLevel+1]
-	assert.Equal(t, expectedLevels, hook.Levels())
+	// Verify the message exists in the buffer
+	assert.Contains(t, buffer.String(), testMessage, "Expected message to be logged")
 }

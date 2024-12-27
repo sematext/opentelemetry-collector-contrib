@@ -92,8 +92,8 @@ func TestLoadConfig(t *testing.T) {
 }
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {
-		name       string
-		config     *Config
+		name        string
+		config      *Config
 		expectError bool
 	}{
 		{
