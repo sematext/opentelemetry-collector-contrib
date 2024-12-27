@@ -6,7 +6,6 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
-	"sync/atomic"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -56,15 +55,7 @@ type LogsConfig struct {
 	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
 	// LogRequests determines whether request tracking is enabled
-	LogRequests bool `mapstructure:"logs_requests"`
-	// LogMaxAge is the max number of days to retain old log files
-	LogMaxAge int `mapstructure:"logs_max_age"`
-	// LogMaxBackups is the maximum number of old log files to retain.
-	LogMaxBackups int `mapstructure:"logs_max_backups"`
-	// LogMaxSize is the maximum size in megabytes of the log file before it gets rotated
-	LogMaxSize int `mapstructure:"logs_max_size"`
-	// WriteEvents determines if events are logged
-	WriteEvents atomic.Bool `mapstructure:"write_events"`
+	// LogRequests bool `mapstructure:"logs_requests"`
 }
 
 // Validate checks for invalid or missing entries in the configuration.
