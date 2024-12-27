@@ -25,7 +25,7 @@ func newExporter(cfg *Config, set exporter.Settings) *sematextLogsExporter {
 	logger := zap.NewNop()
 
 	// Initialize Sematext client
-	client, err := newClient(cfg, logger, FlatWriter{})
+	client, err := newClient(cfg, logger)
 	if err != nil {
 		set.Logger.Error("Failed to create Sematext client", zap.Error(err))
 		return nil
@@ -95,7 +95,7 @@ func (e *sematextLogsExporter) Start(_ context.Context, _ component.Host) error 
 	logger := zap.NewNop()
 
 	// Initialize the Sematext client
-	client, err := newClient(e.config, logger, FlatWriter{})
+	client, err := newClient(e.config, logger)
 	if err != nil {
 		e.logger.Error("Failed to initialize Sematext client", zap.Error(err))
 		return fmt.Errorf("failed to initialize Sematext client: %w", err)

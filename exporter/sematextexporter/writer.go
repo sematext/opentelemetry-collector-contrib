@@ -21,9 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var _ otel2influx.InfluxWriter = (*sematextHTTPWriter)(nil)
@@ -267,35 +264,3 @@ func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[st
 
 // Logs Support
 
-// FlatWriter writes a raw message to a log file.
-type FlatWriter struct {
-	logger *zap.Logger
-}
-
-// NewFlatWriter creates a new instance of FlatWriter.
-func newFlatWriter(filePath string, c *Config) (*FlatWriter, error) {
-	if filePath == "" {
-        return nil, fmt.Errorf("filePath cannot be empty")
-    }
-	lumberjackLogger := &lumberjack.Logger{
-		Filename:   filePath,
-		MaxSize:    c.LogMaxSize,
-		MaxBackups: c.LogMaxBackups,
-		MaxAge:     c.LogMaxAge,
-		Compress:   true,
-	}
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.AddSync(lumberjackLogger),
-		zap.DebugLevel,
-	))
-
-	return &FlatWriter{
-		logger: logger,
-	}, nil
-}
-
-// Write logs a raw message to a log file.
-func (w *FlatWriter) Write(message string) {
-	w.logger.Info(message)
-}

@@ -18,8 +18,7 @@ func TestNewClient(t *testing.T) {
 	}
 	mockLogger := zap.NewNop()
 
-	writer := FlatWriter{}
-	client, err := newClient(mockConfig, mockLogger, writer)
+	client, err := newClient(mockConfig, mockLogger)
 
 	assert.NoError(t, err, "Expected no error while creating new client")
 	assert.NotNil(t, client, "Expected client to be non-nil")
@@ -63,7 +62,6 @@ func TestNewClient_ErrorRetrievingHostname(t *testing.T) {
 		},
 	}
 	mockLogger := zap.NewNop()
-	writer := FlatWriter{}
 
 	originalHostname := osHostname
 	osHostname = func() (string, error) {
@@ -71,7 +69,7 @@ func TestNewClient_ErrorRetrievingHostname(t *testing.T) {
 	}
 	defer func() { osHostname = originalHostname }()
 
-	client, err := newClient(mockConfig, mockLogger, writer)
+	client, err := newClient(mockConfig, mockLogger)
 
 	assert.NotNil(t, client, "Expected client to be created even with hostname error")
 	assert.NoError(t, err, "Expected no error even with hostname error")

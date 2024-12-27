@@ -11,7 +11,6 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.16.0
 	go.opentelemetry.io/collector/exporter v0.110.0
 	go.uber.org/goleak v1.3.0
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

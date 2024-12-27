@@ -4,13 +4,11 @@
 package sematextexporter
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -21,8 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
@@ -227,44 +223,3 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 	})
 }
 
-func TestNewFlatWriter(t *testing.T) {
-	// Temporary file for testing
-	filePath := "test_log_file.log"
-	defer os.Remove(filePath) // Clean up after test
-
-	config := &Config{
-		LogsConfig: LogsConfig{
-			LogMaxSize:    5, // Max size in MB
-			LogMaxBackups: 3,
-			LogMaxAge:     7, // Max age in days
-		},
-	}
-
-	flatWriter, err := newFlatWriter(filePath, config)
-	assert.NoError(t, err, "Expected no error creating FlatWriter")
-	assert.NotNil(t, flatWriter, "Expected FlatWriter to be created successfully")
-
-	// Check if the logger is initialized
-	assert.NotNil(t, flatWriter.logger, "Expected logger to be initialized")
-}
-
-func newTestFlatWriter(writer io.Writer) *FlatWriter {
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.AddSync(writer),
-		zap.DebugLevel,
-	))
-	return &FlatWriter{logger: logger}
-}
-
-func TestFlatWriterWrite(t *testing.T) {
-	var buffer bytes.Buffer
-	flatWriter := newTestFlatWriter(&buffer)
-
-	// Write a test message
-	testMessage := "This is a test log message."
-	flatWriter.Write(testMessage)
-
-	// Verify the message exists in the buffer
-	assert.Contains(t, buffer.String(), testMessage, "Expected message to be logged")
-}

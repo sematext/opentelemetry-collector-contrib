@@ -26,7 +26,6 @@ type client struct {
 	clients  map[string]group
 	config   *Config
 	logger   *zap.Logger
-	writer   FlatWriter
 	hostname string
 }
 
@@ -37,7 +36,7 @@ type Client interface {
 
 // NewClient creates a new instance of ES client that internally stores a reference
 // to both event and log receivers.
-func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, error) {
+func newClient(config *Config, logger *zap.Logger) (Client, error) {
 	clients := make(map[string]group)
 
 	// Client for shipping to logsene
@@ -46,7 +45,6 @@ func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, e
 			Addresses: []string{config.LogsEndpoint},
 		})
 		if err != nil {
-			writer.Write("Failed to create Elasticsearch client: " + err.Error())
 			logger.Error("Failed to create Elasticsearch client", zap.Error(err))
 			return nil, fmt.Errorf("elasticsearch client creation failed: %w", err)
 		}
@@ -65,7 +63,6 @@ func newClient(config *Config, logger *zap.Logger, writer FlatWriter) (Client, e
 		clients:  clients,
 		config:   config,
 		logger:   logger,
-		writer:   writer,
 		hostname: hostname,
 	}, nil
 }
