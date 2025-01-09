@@ -51,8 +51,8 @@ func createDefaultConfig() component.Config {
 			PayloadMaxBytes: 300_000,
 		},
 		LogsConfig: LogsConfig{
-			LogsEndpoint:  "https://logsene-receiver.sematext.com",
-			AppToken:      appToken,
+			LogsEndpoint: "https://logsene-receiver.sematext.com",
+			AppToken:     appToken,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Region:        "us",

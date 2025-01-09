@@ -173,12 +173,6 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		b.encoder = nil
 		b.payloadLines = 0
 	}()
-	  // Log the payload being sent
-	  payload := string(b.encoder.Bytes())
-	  b.logger.Debug("Sending payload to Sematext",
-		  "payload", payload,
-		  "numberOfLines", b.payloadLines,
-		  "payloadSize", len(payload))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.writeURL, bytes.NewReader(b.encoder.Bytes()))
 	if err != nil {
@@ -216,56 +210,56 @@ type tag struct {
 
 // optimizeTags filters for allowed tags and sorts them
 func (b *sematextHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
-    // Define allowed tags set
-    allowedTags := map[string]struct{}{
-        "service.name":              {},
-        "service.instance.id":       {},
-        "process.pid":              {},
-        "os.type":                  {},
-        "os.host":                  {},
-        "http.response.status_code": {},
-        "network.protocol.version":  {},
-        "jvm.memory.type":          {},
-        "http.request.method":       {},
-        "jvm.gc.name":              {},
-        "token":                    {},
-    }
-    
-    // Create filtered map with only allowed tags
-    filteredMap := make(map[string]string)
-    
-    // Always ensure token and os.host are present
-    filteredMap["token"] = b.token
-    filteredMap["os.host"] = b.hostname
-    
-    // Only include allowed tags
-    for k, v := range m {
-        // Skip empty keys/values
-        if k == "" || v == "" {
-            b.logger.Debug("skipping empty tag", "key", k, "value", v)
-            continue
-        }
-        
-        // Only include tags from our allowed list
-        if _, isAllowed := allowedTags[k]; isAllowed {
-            filteredMap[k] = v
-        } else {
-            b.logger.Debug("dropping non-allowed tag", "key", k)
-        }
-    }
-    
-    // Convert to sorted slice
-    tags := make([]tag, 0, len(filteredMap))
-    for k, v := range filteredMap {
-        tags = append(tags, tag{k, v})
-    }
-    
-    // Sort tags by key
-    sort.Slice(tags, func(i, j int) bool {
-        return tags[i].k < tags[j].k
-    })
-    
-    return tags
+	// Define allowed tags set
+	allowedTags := map[string]struct{}{
+		"service.name":              {},
+		"service.instance.id":       {},
+		"process.pid":               {},
+		"os.type":                   {},
+		"os.host":                   {},
+		"http.response.status_code": {},
+		"network.protocol.version":  {},
+		"jvm.memory.type":           {},
+		"http.request.method":       {},
+		"jvm.gc.name":               {},
+		"token":                     {},
+	}
+
+	// Create filtered map with only allowed tags
+	filteredMap := make(map[string]string)
+
+	// Always ensure token and os.host are present
+	filteredMap["token"] = b.token
+	filteredMap["os.host"] = b.hostname
+
+	// Only include allowed tags
+	for k, v := range m {
+		// Skip empty keys/values
+		if k == "" || v == "" {
+			b.logger.Debug("skipping empty tag", "key", k, "value", v)
+			continue
+		}
+
+		// Only include tags from our allowed list
+		if _, isAllowed := allowedTags[k]; isAllowed {
+			filteredMap[k] = v
+		} else {
+			b.logger.Debug("dropping non-allowed tag", "key", k)
+		}
+	}
+
+	// Convert to sorted slice
+	tags := make([]tag, 0, len(filteredMap))
+	for k, v := range filteredMap {
+		tags = append(tags, tag{k, v})
+	}
+
+	// Sort tags by key
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].k < tags[j].k
+	})
+
+	return tags
 }
 
 func (b *sematextHTTPWriterBatch) convertFields(m map[string]any) (fields map[string]lineprotocol.Value) {

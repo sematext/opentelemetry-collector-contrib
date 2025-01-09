@@ -24,8 +24,8 @@ import (
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 	batch := &sematextHTTPWriterBatch{
 		sematextHTTPWriter: &sematextHTTPWriter{
-			logger: common.NoopLogger{},
-			token: "test-token",
+			logger:   common.NoopLogger{},
+			token:    "test-token",
 			hostname: "test-host",
 		},
 	}
@@ -47,7 +47,7 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 			name: "allowed tags only",
 			m: map[string]string{
 				"service.name": "test-service",
-				"os.type":     "linux",
+				"os.type":      "linux",
 			},
 			expectedTags: []tag{
 				{"os.host", "test-host"},
@@ -61,8 +61,8 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 			m: map[string]string{
 				"service.name":    "test-service",
 				"non.allowed.tag": "should-be-dropped",
-				"os.type":        "linux",
-				"random.tag":     "should-be-dropped-too",
+				"os.type":         "linux",
+				"random.tag":      "should-be-dropped-too",
 			},
 			expectedTags: []tag{
 				{"os.host", "test-host"},
@@ -80,9 +80,9 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 				"os.type":                   "linux",
 				"http.response.status_code": "200",
 				"network.protocol.version":  "1.1",
-				"jvm.memory.type":          "heap",
+				"jvm.memory.type":           "heap",
 				"http.request.method":       "GET",
-				"jvm.gc.name":              "G1",
+				"jvm.gc.name":               "G1",
 			},
 			expectedTags: []tag{
 				{"http.request.method", "GET"},
@@ -102,7 +102,7 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 			name: "empty tag values",
 			m: map[string]string{
 				"service.name": "",
-				"os.type":     "linux",
+				"os.type":      "linux",
 			},
 			expectedTags: []tag{
 				{"os.host", "test-host"},
@@ -119,76 +119,75 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 }
 
 func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
-    for _, testCase := range []struct {
-        name                   string
-        payloadMaxLines        int
-        payloadMaxBytes        int
-        expectMultipleRequests bool
-    }{
-        {
-            name:                   "default",
-            payloadMaxLines:        10_000,
-            payloadMaxBytes:        10_000_000,
-            expectMultipleRequests: false,
-        },
-        {
-            name:                   "limit-lines",
-            payloadMaxLines:        1,
-            payloadMaxBytes:        10_000_000,
-            expectMultipleRequests: true,
-        },
-        {
-            name:                   "limit-bytes",
-            payloadMaxLines:        10_000,
-            payloadMaxBytes:        1,
-            expectMultipleRequests: true,
-        },
-    } {
-        t.Run(testCase.name, func(t *testing.T) {
-            var httpRequests []*http.Request
+	for _, testCase := range []struct {
+		name                   string
+		payloadMaxLines        int
+		payloadMaxBytes        int
+		expectMultipleRequests bool
+	}{
+		{
+			name:                   "default",
+			payloadMaxLines:        10_000,
+			payloadMaxBytes:        10_000_000,
+			expectMultipleRequests: false,
+		},
+		{
+			name:                   "limit-lines",
+			payloadMaxLines:        1,
+			payloadMaxBytes:        10_000_000,
+			expectMultipleRequests: true,
+		},
+		{
+			name:                   "limit-bytes",
+			payloadMaxLines:        10_000,
+			payloadMaxBytes:        1,
+			expectMultipleRequests: true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			var httpRequests []*http.Request
 
-            mockHTTPService := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-                httpRequests = append(httpRequests, r)
-            }))
-            t.Cleanup(mockHTTPService.Close)
+			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				httpRequests = append(httpRequests, r)
+			}))
+			t.Cleanup(mockHTTPService.Close)
 
-            batch := &sematextHTTPWriterBatch{
-                sematextHTTPWriter: &sematextHTTPWriter{
-                    encoderPool: sync.Pool{
-                        New: func() any {
-                            e := new(lineprotocol.Encoder)
-                            e.SetLax(false)
-                            e.SetPrecision(lineprotocol.Nanosecond)
-                            return e
-                        },
-                    },
-                    httpClient:      &http.Client{},
-                    writeURL:        mockHTTPService.URL,
-                    payloadMaxLines: testCase.payloadMaxLines,
-                    payloadMaxBytes: testCase.payloadMaxBytes,
-                    logger:          common.NoopLogger{},
-                    hostname:        "test-host",
-                    token:          "test-token",
-                },
-            }
-            defer batch.sematextHTTPWriter.httpClient.CloseIdleConnections()
+			batch := &sematextHTTPWriterBatch{
+				sematextHTTPWriter: &sematextHTTPWriter{
+					encoderPool: sync.Pool{
+						New: func() any {
+							e := new(lineprotocol.Encoder)
+							e.SetLax(false)
+							e.SetPrecision(lineprotocol.Nanosecond)
+							return e
+						},
+					},
+					httpClient:      &http.Client{},
+					writeURL:        mockHTTPService.URL,
+					payloadMaxLines: testCase.payloadMaxLines,
+					payloadMaxBytes: testCase.payloadMaxBytes,
+					logger:          common.NoopLogger{},
+					hostname:        "test-host",
+					token:           "test-token",
+				},
+			}
+			defer batch.sematextHTTPWriter.httpClient.CloseIdleConnections()
 
-            err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
-            require.NoError(t, err)
-            err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
-            require.NoError(t, err)
-            err = batch.WriteBatch(context.Background())
-            require.NoError(t, err)
+			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
+			require.NoError(t, err)
+			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
+			require.NoError(t, err)
+			err = batch.WriteBatch(context.Background())
+			require.NoError(t, err)
 
-            if testCase.expectMultipleRequests {
-                assert.Len(t, httpRequests, 2)
-            } else {
-                assert.Len(t, httpRequests, 1)
-            }
-        })
-    }
+			if testCase.expectMultipleRequests {
+				assert.Len(t, httpRequests, 2)
+			} else {
+				assert.Len(t, httpRequests, 1)
+			}
+		})
+	}
 }
-
 
 func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request

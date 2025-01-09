@@ -55,8 +55,8 @@ func TestLoadConfig(t *testing.T) {
 					PayloadMaxBytes: 27,
 				},
 				LogsConfig: LogsConfig{
-					AppToken:      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					LogsEndpoint:  "https://logsene-receiver.sematext.com",
+					AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					LogsEndpoint: "https://logsene-receiver.sematext.com",
 				},
 
 				BackOffConfig: configretry.BackOffConfig{
