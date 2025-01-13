@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -79,12 +78,73 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
 			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpoint,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.logs)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.metrics.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnAddForMetricsWithHints(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		expectedError          string
+	}{
+		{
+			name:                 "dynamically set with supported endpoint",
+			expectedReceiverType: &nopWithEndpointReceiver{},
+			expectedReceiverConfig: &nopWithEndpointConfig{
+				IntField: 20,
+				Endpoint: "1.2.3.4:6379",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Discovery.Enabled = true
+
+			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler.OnAdd([]observer.Endpoint{
+				portEndpointWithHints,
 				unsupportedEndpoint,
 			})
 
@@ -181,6 +241,7 @@ func TestOnAddForLogs(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -214,6 +275,75 @@ func TestOnAddForLogs(t *testing.T) {
 				require.NotNil(t, v)
 				actualConfig = v.cfg
 			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnAddForLogsWithHints(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		target                 observer.Endpoint
+		hintsConfig            DiscoveryConfig
+		expectedError          string
+	}{
+		{
+			name:                 "dynamically generated standard filelog receiver with explicit enablement",
+			target:               podContainerEndpointWithHints,
+			hintsConfig:          DiscoveryConfig{Enabled: true},
+			expectedReceiverType: &nopWithFilelogReceiver{},
+			expectedReceiverConfig: &nopWithFilelogConfig{
+				Include:         []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
+				IncludeFileName: false,
+				IncludeFilePath: true,
+				Operators:       []any{map[string]any{"id": "container-parser", "type": "container"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Discovery = test.hintsConfig
+
+			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+			handler.OnAdd([]observer.Endpoint{
+				test.target,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.metrics)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.logs.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithFilelogReceiver:
 				require.NotNil(t, v)
 				actualConfig = v.cfg
 			default:
@@ -283,6 +413,7 @@ func TestOnAddForTraces(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -322,7 +453,6 @@ func TestOnAddForTraces(t *testing.T) {
 				t.Fatalf("unexpected startedComponent: %T", v)
 			}
 			require.Equal(t, test.expectedReceiverConfig, actualConfig)
-
 		})
 	}
 }
@@ -340,6 +470,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -369,6 +500,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
@@ -398,6 +530,7 @@ func TestOnChange(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -452,6 +585,7 @@ func newMockHost(t *testing.T, host component.Host) *mockHost {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[component.MustNewType("with_endpoint")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("filelog")] = &nopWithFilelogFactory{Factory: receivertest.NewNopFactory()}
 	factories.Receivers[component.MustNewType("without_endpoint")] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
 	return &mockHost{t: t, factories: factories, Host: host}
 }
@@ -463,11 +597,6 @@ func (m *mockHost) GetFactory(kind component.Kind, componentType component.Type)
 
 func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	m.t.Fatal("GetExtensions")
-	return nil
-}
-
-func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	m.t.Fatal("GetExporters")
 	return nil
 }
 
@@ -512,15 +641,7 @@ type reportingHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *reportingHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *reportingHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

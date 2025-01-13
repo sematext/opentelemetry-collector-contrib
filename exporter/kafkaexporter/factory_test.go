@@ -73,12 +73,11 @@ func TestCreateMetricExporter(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			f := NewFactory()
-			exporter, err := f.CreateMetricsExporter(
+			exporter, err := f.CreateMetrics(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,
@@ -138,12 +137,11 @@ func TestCreateLogExporter(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			f := NewFactory()
-			exporter, err := f.CreateLogsExporter(
+			exporter, err := f.CreateLogs(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,
@@ -203,12 +201,11 @@ func TestCreateTraceExporter(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			f := NewFactory()
-			exporter, err := f.CreateTracesExporter(
+			exporter, err := f.CreateTraces(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,
