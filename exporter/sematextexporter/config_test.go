@@ -39,8 +39,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Timeout:  500 * time.Millisecond,
-					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
+					Timeout: 500 * time.Millisecond,
+					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: "https://spm-receiver.sematext.com",
@@ -49,12 +49,16 @@ func TestLoadConfig(t *testing.T) {
 						NumConsumers: 3,
 						QueueSize:    10,
 					},
-					AppToken:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					MetricsSchema:   "telegraf-prometheus-v2",
 					PayloadMaxLines: 72,
 					PayloadMaxBytes: 27,
 				},
-			
+				LogsConfig: LogsConfig{
+					AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					LogsEndpoint: "https://logsene-receiver.sematext.com",
+				},
+
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     1 * time.Second,
@@ -63,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				Region:          "US",
+				Region: "us",
 			},
 		},
 	}
@@ -79,6 +83,90 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		expectError bool
+	}{
+		{
+			name: "Valid configuration 1",
+			config: &Config{
+				Region: "US",
+				MetricsConfig: MetricsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+				LogsConfig: LogsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "Valid configuration 2",
+			config: &Config{
+				Region: "EU",
+				MetricsConfig: MetricsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+				LogsConfig: LogsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "Invalid region",
+			config: &Config{
+				Region: "ASIA",
+				MetricsConfig: MetricsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+				LogsConfig: LogsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "Invalid metrics AppToken length",
+			config: &Config{
+				Region: "US",
+				MetricsConfig: MetricsConfig{
+					AppToken: "short-token",
+				},
+				LogsConfig: LogsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "Invalid logs AppToken length",
+			config: &Config{
+				Region: "EU",
+				MetricsConfig: MetricsConfig{
+					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				},
+				LogsConfig: LogsConfig{
+					AppToken: "short-token",
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectError {
+				assert.Error(t, err, "Expected an error for invalid configuration")
+			} else {
+				assert.NoError(t, err, "Expected no error for valid configuration")
+			}
 		})
 	}
 }

@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-
 	"sync"
 	"time"
 
@@ -48,7 +47,6 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("could not detect hostname: %w", err)
-
 	}
 
 	return &sematextHTTPWriter{
@@ -60,13 +58,13 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 				return e
 			},
 		},
-		telemetrySettings:  telemetrySettings,
-		writeURL:           writeURL,
-		payloadMaxLines:    config.PayloadMaxLines,
-		payloadMaxBytes:    config.PayloadMaxBytes,
-		logger:             logger,
-		hostname:           hostname,
-		token:              config.AppToken,
+		telemetrySettings: telemetrySettings,
+		writeURL:          writeURL,
+		payloadMaxLines:   config.PayloadMaxLines,
+		payloadMaxBytes:   config.PayloadMaxBytes,
+		logger:            logger,
+		hostname:          hostname,
+		token:             config.MetricsConfig.AppToken,
 	}, nil
 }
 
@@ -97,7 +95,13 @@ func (w *sematextHTTPWriter) Start(ctx context.Context, host component.Host) err
 	w.httpClient = httpClient
 	return nil
 }
-
+func (w *sematextHTTPWriter) Shutdown(_ context.Context) error {
+	if w.httpClient != nil {
+		w.httpClient.CloseIdleConnections() // Closes all idle connections for the HTTP client
+	}
+	w.logger.Debug("HTTP client connections closed successfully for Sematext HTTP Writer")
+	return nil
+}
 func (w *sematextHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newSematextHTTPWriterBatch(w)
 }
@@ -127,8 +131,6 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags["token"] = b.token
-	tags["os.host"] = b.hostname
 
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
@@ -191,13 +193,13 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	}
 
 	switch res.StatusCode {
-		case 200, 204:
-			break
-		case 500:
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default:
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	case http.StatusOK, http.StatusNoContent:
+		break
+	case http.StatusInternalServerError:
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default:
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
+	}
 
 	return nil
 }
@@ -206,37 +208,53 @@ type tag struct {
 	k, v string
 }
 
-// optimizeTags sorts tags by key and removes tags with empty keys or values
+// optimizeTags filters for allowed tags and sorts them
 func (b *sematextHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
-	// Ensure token and os.host tags are always present
-	m["token"] = b.token
-	m["os.host"] = b.hostname
-
-	// Limit to 18 other tags, excluding token and os.host
-	if len(m) > 20 {
-		count := 0
-		for k := range m {
-			if k != "token" && k != "os.host" {
-				count++
-				if count > 18 {
-					delete(m, k)
-				}
-			}
-		}
+	// Define allowed tags set
+	allowedTags := map[string]struct{}{
+		"service.name":              {},
+		"service.instance.id":       {},
+		"process.pid":               {},
+		"os.type":                   {},
+		"os.host":                   {},
+		"http.response.status_code": {},
+		"network.protocol.version":  {},
+		"jvm.memory.type":           {},
+		"http.request.method":       {},
+		"jvm.gc.name":               {},
+		"token":                     {},
 	}
 
-	tags := make([]tag, 0, len(m))
+	// Create filtered map with only allowed tags
+	filteredMap := make(map[string]string)
+
+	// Always ensure token and os.host are present
+	filteredMap["token"] = b.token
+	filteredMap["os.host"] = b.hostname
+
+	// Only include allowed tags
 	for k, v := range m {
-		switch {
-		case k == "":
-			b.logger.Debug("empty tag key")
-		case v == "":
-			b.logger.Debug("empty tag value", "key", k)
-		default:
-			tags = append(tags, tag{k, v})
+		// Skip empty keys/values
+		if k == "" || v == "" {
+			b.logger.Debug("skipping empty tag", "key", k, "value", v)
+			continue
+		}
+
+		// Only include tags from our allowed list
+		if _, isAllowed := allowedTags[k]; isAllowed {
+			filteredMap[k] = v
+		} else {
+			b.logger.Debug("dropping non-allowed tag", "key", k)
 		}
 	}
 
+	// Convert to sorted slice
+	tags := make([]tag, 0, len(filteredMap))
+	for k, v := range filteredMap {
+		tags = append(tags, tag{k, v})
+	}
+
+	// Sort tags by key
 	sort.Slice(tags, func(i, j int) bool {
 		return tags[i].k < tags[j].k
 	})

@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sematextexporter
 
 import (
@@ -21,7 +24,9 @@ import (
 func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 	batch := &sematextHTTPWriterBatch{
 		sematextHTTPWriter: &sematextHTTPWriter{
-			logger: common.NoopLogger{},
+			logger:   common.NoopLogger{},
+			token:    "test-token",
+			hostname: "test-host",
 		},
 	}
 
@@ -31,46 +36,84 @@ func TestSematextHTTPWriterBatchOptimizeTags(t *testing.T) {
 		expectedTags []tag
 	}{
 		{
-			name:         "empty map",
-			m:            map[string]string{},
-			expectedTags: []tag{},
+			name: "empty map",
+			m:    map[string]string{},
+			expectedTags: []tag{
+				{"os.host", "test-host"},
+				{"token", "test-token"},
+			},
 		},
 		{
-			name: "one tag",
+			name: "allowed tags only",
 			m: map[string]string{
-				"k": "v",
+				"service.name": "test-service",
+				"os.type":      "linux",
 			},
 			expectedTags: []tag{
-				{"k", "v"},
+				{"os.host", "test-host"},
+				{"os.type", "linux"},
+				{"service.name", "test-service"},
+				{"token", "test-token"},
 			},
 		},
 		{
-			name: "empty tag key",
+			name: "mixed allowed and non-allowed tags",
 			m: map[string]string{
-				"": "v",
-			},
-			expectedTags: []tag{},
-		},
-		{
-			name: "empty tag value",
-			m: map[string]string{
-				"k": "",
-			},
-			expectedTags: []tag{},
-		},
-		{
-			name: "seventeen tags",
-			m: map[string]string{
-				"k00": "v00", "k01": "v01", "k02": "v02", "k03": "v03", "k04": "v04", "k05": "v05", "k06": "v06", "k07": "v07", "k08": "v08", "k09": "v09", "k10": "v10", "k11": "v11", "k12": "v12", "k13": "v13", "k14": "v14", "k15": "v15", "k16": "v16",
+				"service.name":    "test-service",
+				"non.allowed.tag": "should-be-dropped",
+				"os.type":         "linux",
+				"random.tag":      "should-be-dropped-too",
 			},
 			expectedTags: []tag{
-				{"k00", "v00"}, {"k01", "v01"}, {"k02", "v02"}, {"k03", "v03"}, {"k04", "v04"}, {"k05", "v05"}, {"k06", "v06"}, {"k07", "v07"}, {"k08", "v08"}, {"k09", "v09"}, {"k10", "v10"}, {"k11", "v11"}, {"k12", "v12"}, {"k13", "v13"}, {"k14", "v14"}, {"k15", "v15"}, {"k16", "v16"},
+				{"os.host", "test-host"},
+				{"os.type", "linux"},
+				{"service.name", "test-service"},
+				{"token", "test-token"},
+			},
+		},
+		{
+			name: "all allowed tags present",
+			m: map[string]string{
+				"service.name":              "test-service",
+				"service.instance.id":       "instance-1",
+				"process.pid":               "1234",
+				"os.type":                   "linux",
+				"http.response.status_code": "200",
+				"network.protocol.version":  "1.1",
+				"jvm.memory.type":           "heap",
+				"http.request.method":       "GET",
+				"jvm.gc.name":               "G1",
+			},
+			expectedTags: []tag{
+				{"http.request.method", "GET"},
+				{"http.response.status_code", "200"},
+				{"jvm.gc.name", "G1"},
+				{"jvm.memory.type", "heap"},
+				{"network.protocol.version", "1.1"},
+				{"os.host", "test-host"},
+				{"os.type", "linux"},
+				{"process.pid", "1234"},
+				{"service.instance.id", "instance-1"},
+				{"service.name", "test-service"},
+				{"token", "test-token"},
+			},
+		},
+		{
+			name: "empty tag values",
+			m: map[string]string{
+				"service.name": "",
+				"os.type":      "linux",
+			},
+			expectedTags: []tag{
+				{"os.host", "test-host"},
+				{"os.type", "linux"},
+				{"token", "test-token"},
 			},
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			gotTags := batch.optimizeTags(testCase.m)
-			assert.Equal(t, testCase.expectedTags, gotTags)
+			assert.Equal(t, testCase.expectedTags, gotTags, "tags should match expected values")
 		})
 	}
 }
@@ -124,8 +167,11 @@ func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
 					payloadMaxLines: testCase.payloadMaxLines,
 					payloadMaxBytes: testCase.payloadMaxBytes,
 					logger:          common.NoopLogger{},
+					hostname:        "test-host",
+					token:           "test-token",
 				},
 			}
+			defer batch.sematextHTTPWriter.httpClient.CloseIdleConnections()
 
 			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)
@@ -147,7 +193,6 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
 	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-
 		if assert.Nil(t, recordedRequest) {
 			var err error
 			recordedRequest = r
@@ -164,23 +209,24 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		new(common.NoopLogger),
 		&Config{
 			MetricsConfig: MetricsConfig{
-				MetricsEndpoint:noopHTTPServer.URL ,
-				AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				MetricsEndpoint: noopHTTPServer.URL,
+				AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			},
-			Region:    "US",
+			Region: "US",
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	sematextWriter.httpClient = noopHTTPServer.Client()
 	sematextWriterBatch := sematextWriter.NewBatch()
+	defer sematextWriter.httpClient.CloseIdleConnections()
 
 	err = sematextWriterBatch.EnqueuePoint(
 		context.Background(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
-		map[string]any{"f": int64(1)},        
-		nowTime,                               
-		common.InfluxMetricValueTypeUntyped) 
+		map[string]any{"f": int64(1)},
+		nowTime,
+		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
 
 	err = sematextWriterBatch.WriteBatch(context.Background())
@@ -188,7 +234,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {
-		expected:= fmt.Sprintf("m,k=v,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
+		expected := fmt.Sprintf("m,os.host=%s,token=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f=1i 1628605794318000000", sematextWriter.hostname)
 		assert.Equal(t, expected, strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
@@ -199,7 +245,7 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "us",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
 		}
 		_, err := composeWriteURL(cfg)
@@ -211,9 +257,8 @@ func TestComposeWriteURLDoesNotPanic(t *testing.T) {
 			Region: "eu",
 			MetricsConfig: MetricsConfig{
 				MetricsEndpoint: "http://localhost:8080",
-				MetricsSchema: "telegraf-prometheus-v2",
+				MetricsSchema:   "telegraf-prometheus-v2",
 			},
-
 		}
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)

@@ -36,6 +36,13 @@ func TestComponentLifecycle(t *testing.T) {
 	}{
 
 		{
+			name: "logs",
+			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
+				return factory.CreateLogsExporter(ctx, set, cfg)
+			},
+		},
+
+		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsExporter(ctx, set, cfg)
